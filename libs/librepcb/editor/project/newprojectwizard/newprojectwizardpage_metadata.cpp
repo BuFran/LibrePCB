@@ -28,6 +28,7 @@
 #include "ui_newprojectwizardpage_metadata.h"
 
 #include <librepcb/core/application.h>
+#include <librepcb/core/workspace/licensedb.h>
 #include <librepcb/core/workspace/workspace.h>
 #include <librepcb/core/workspace/workspacesettings.h>
 
@@ -67,6 +68,8 @@ NewProjectWizardPage_Metadata::NewProjectWizardPage_Metadata(
           &NewProjectWizardPage_Metadata::nameChanged);
   connect(mUi->edtLocation, &QLineEdit::textChanged, this,
           &NewProjectWizardPage_Metadata::locationChanged);
+  connect(mUi->cbxLicense, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &NewProjectWizardPage_Metadata::licenseChanged);
   connect(mUi->lblLicenseLink, &QLabel::linkActivated, this,
           [this](const QString& url) {
             DesktopServices ds(mWorkspace.getSettings(), this);
@@ -75,34 +78,10 @@ NewProjectWizardPage_Metadata::NewProjectWizardPage_Metadata(
 
   // insert values
   mUi->edtAuthor->setText(ws.getSettings().userName.get());
-  mUi->cbxLicense->addItem(tr("None"), QString());
-  mUi->cbxLicense->addItem(tr("CC0-1.0 (no restrictions)"),
-                           QString("licenses/cc0-1.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-4.0 (requires attribution)"),
-                           QString("licenses/cc-by-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-SA-4.0 (requires attribution + share alike)"),
-      QString("licenses/cc-by-sa-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-NC-4.0 (requires attribution + non commercial)"),
-      QString("licenses/cc-by-nc-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-NC-SA-4.0 (requires attribution + non "
-                              "commercial + share alike)"),
-                           QString("licenses/cc-by-nc-sa-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-NC-ND-4.0 (requires attribution + non "
-                              "commercial + no derivatives)"),
-                           QString("licenses/cc-by-nc-nd-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-ND-4.0 (requires attribution + no derivatives)"),
-      QString("licenses/cc-by-nd-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("TAPR-OHL-1.0"),
-                           QString("licenses/tapr-ohl-1.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-P-2.0 (permissive)"),
-                           QString("licenses/cern-ohl-p-2.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-W-2.0 (weakly reciprocal)"),
-                           QString("licenses/cern-ohl-w-2.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-S-2.0 (strongly reciprocal)"),
-                           QString("licenses/cern-ohl-s-2.0.txt"));
+
+  for (const auto& lic : ws.getLicenses().all())
+    mUi->cbxLicense->addItem(lic.getName(), QVariant::fromValue(lic));
+
   mUi->cbxLicense->setCurrentIndex(0);  // no license
 }
 
@@ -132,19 +111,8 @@ QString NewProjectWizardPage_Metadata::getProjectAuthor() const noexcept {
   return mUi->edtAuthor->text();
 }
 
-bool NewProjectWizardPage_Metadata::isLicenseSet() const noexcept {
-  return !mUi->cbxLicense->currentData(Qt::UserRole).toString().isEmpty();
-}
-
-FilePath NewProjectWizardPage_Metadata::getProjectLicenseFilePath() const
-    noexcept {
-  QString licenseFileName =
-      mUi->cbxLicense->currentData(Qt::UserRole).toString();
-  if (!licenseFileName.isEmpty()) {
-    return Application::getResourcesDir().getPathTo(licenseFileName);
-  } else {
-    return FilePath();
-  }
+License NewProjectWizardPage_Metadata::getProjectLicense() const noexcept {
+  return mUi->cbxLicense->currentData(Qt::UserRole).value<License>();
 }
 
 FilePath NewProjectWizardPage_Metadata::getFullFilePath() const noexcept {
@@ -176,6 +144,27 @@ void NewProjectWizardPage_Metadata::chooseLocationClicked() noexcept {
     updateProjectFilePath();
     emit completeChanged();
   }
+}
+
+void NewProjectWizardPage_Metadata::licenseChanged(int index) noexcept {
+  Q_UNUSED(index)
+
+  const QString SButton =
+      tr("<a href=\"%1\"><img src=\":/img/status/info.png\" width=\"25\" "
+         "height=\"25\"/></a>");
+
+  QString s2 =
+      tr("<h4>{LICENSE_NAME}</h4>{LICENSE_LINK}{LICENSE_FILE}{LICENSE_NOTE}");
+
+  auto lic = getProjectLicense();
+
+  s2.replace("{LICENSE_NAME}", lic.getName());
+  s2.replace("{LICENSE_LINK}", textLink(lic));
+  s2.replace("{LICENSE_FILE}", textFiles(lic));
+  s2.replace("{LICENSE_NOTE}", textNote(lic));
+
+  mUi->lblLicenseLink->setText(SButton.arg(lic.getLink()));
+  mUi->lblLicenseLink->setToolTip(s2);
 }
 
 /*******************************************************************************
@@ -241,6 +230,50 @@ bool NewProjectWizardPage_Metadata::validatePage() noexcept {
   }
 
   return true;
+}
+
+/*******************************************************************************
+ *  Private Static Methods
+ ******************************************************************************/
+
+QString NewProjectWizardPage_Metadata::textLink(
+    const License& license) noexcept {
+  const QString SUrl = tr("<h5>Url:</h5>%1");
+
+  auto link = license.getLink();
+  if (!link.isEmpty()) {
+    return SUrl.arg(license.getLink());
+  }
+  return "";
+}
+
+QString NewProjectWizardPage_Metadata::textFiles(
+    const License& license) noexcept {
+  const QString SFile = tr("<h5>Files to be copied:</h5>%1");
+
+  auto files = license.getFiles();
+  if (files.empty()) {
+    return "";
+  }
+
+  QString str{};
+  QString sep{};
+
+  for (const auto& p : files) {
+    str += sep + p.toRelative(license.getPath());
+    sep = "<br>";
+  }
+
+  return SFile.arg(str);
+}
+
+QString NewProjectWizardPage_Metadata::textNote(
+    const License& license) noexcept {
+  if (license.getAdditional())
+    return "<h5>Note:</h5>Additional actions might be required to fully "
+           "license the project. See the license text for more information.";
+
+  return "";
 }
 
 /*******************************************************************************

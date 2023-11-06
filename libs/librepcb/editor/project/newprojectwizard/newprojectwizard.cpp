@@ -112,11 +112,14 @@ std::unique_ptr<Project> NewProjectWizard::createProject() const {
     project->addBoard(*board);
   }
 
+  auto license = mPageMetadata->getProjectLicense();
   // copy license file
-  if (mPageMetadata->isLicenseSet()) {
+  if (license.isSet()) {
     try {
-      FilePath source = mPageMetadata->getProjectLicenseFilePath();
-      dir.write("LICENSE.txt", FileUtils::readFile(source));  // can throw
+      auto path = license.getPath();
+      foreach (const auto& f, license.getFiles()) {
+        dir.write(f.toRelative(path), FileUtils::readFile(f));  // can throw
+      }
     } catch (Exception& e) {
       qCritical() << "Could not copy the license file:" << e.getMsg();
     }
@@ -128,7 +131,7 @@ std::unique_ptr<Project> NewProjectWizard::createProject() const {
         Application::getResourcesDir().getPathTo("project/readme_template");
     QByteArray content = FileUtils::readFile(source);  // can throw
     content.replace("{PROJECT_NAME}", mPageMetadata->getProjectName().toUtf8());
-    if (mPageMetadata->isLicenseSet()) {
+    if (license.isSet()) {
       content.replace("{LICENSE_TEXT}", "See [LICENSE.txt](LICENSE.txt).");
     } else {
       content.replace("{LICENSE_TEXT}", "No license set.");

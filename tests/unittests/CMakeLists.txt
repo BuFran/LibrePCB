@@ -96,6 +96,7 @@ add_executable(
   core/utils/tangentpathjoinertest.cpp
   core/utils/toolboxtest.cpp
   core/utils/transformtest.cpp
+  core/workspace/licensetest.cpp
   core/workspace/workspacelibrarydbtest.cpp
   core/workspace/workspacesettingstest.cpp
   core/workspace/workspacetest.cpp
@@ -120,6 +121,8 @@ add_executable(
   editor/workspace/categorytreemodeltest.cpp
   editor/workspace/librarymanager/librarydownloadtest.cpp
   main.cpp
+  testconv.cpp
+  testconv.h
   testhelpers.cpp
   testhelpers.h
 )

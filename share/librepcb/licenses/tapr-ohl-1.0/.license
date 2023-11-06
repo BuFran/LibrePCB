@@ -1,0 +1,7 @@
+[LibrePCBLicense]
+Name = TAPR-OHL-1.0
+Link = https://tapr.org/the-tapr-open-hardware-license/
+Additional = true
+
+[Attributes]
+LICENSE_NOTICE = Licensed under the TAPR Open Hardware License (www.tapr.org/OHL)

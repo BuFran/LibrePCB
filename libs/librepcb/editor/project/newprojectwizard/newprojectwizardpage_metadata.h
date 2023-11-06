@@ -24,6 +24,7 @@
  *  Includes
  ******************************************************************************/
 #include <librepcb/core/fileio/filepath.h>
+#include <librepcb/core/workspace/license.h>
 
 #include <QtCore>
 #include <QtWidgets>
@@ -65,8 +66,7 @@ public:
   // Getters
   QString getProjectName() const noexcept;
   QString getProjectAuthor() const noexcept;
-  bool isLicenseSet() const noexcept;
-  FilePath getProjectLicenseFilePath() const noexcept;
+  License getProjectLicense() const noexcept;
   FilePath getFullFilePath() const noexcept;
 
   // Operator Overloadings
@@ -76,12 +76,18 @@ public:
 private:  // GUI Action Handlers
   void nameChanged(const QString& name) noexcept;
   void locationChanged(const QString& dir) noexcept;
+  void licenseChanged(int index) noexcept;
   void chooseLocationClicked() noexcept;
 
 private:  // Methods
   void updateProjectFilePath() noexcept;
   bool isComplete() const noexcept override;
   bool validatePage() noexcept override;
+
+private:  // Static Methods
+  static QString textLink(const License& license) noexcept;
+  static QString textFiles(const License& license) noexcept;
+  static QString textNote(const License& license) noexcept;
 
 private:  // Data
   const Workspace& mWorkspace;

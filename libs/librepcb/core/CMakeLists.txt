@@ -475,6 +475,10 @@ add_library(
   utils/toolbox.h
   utils/transform.cpp
   utils/transform.h
+  workspace/license.cpp
+  workspace/license.h
+  workspace/licensedb.cpp
+  workspace/licensedb.h
   workspace/theme.cpp
   workspace/theme.h
   workspace/themecolor.cpp
