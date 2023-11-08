@@ -112,7 +112,6 @@ TEST_F(LicenseTest, testEmpty) {
 }
 
 TEST_F(LicenseTest, testDetectValid) {
-
   EXPECT_EQ("", str(License::detect(ValidLicense)));
 }
 
@@ -123,7 +122,6 @@ TEST_F(LicenseTest, testDetectMissingMeta) {
 }
 
 TEST_F(LicenseTest, testDetectMissingRequiredKey) {
-
   EXPECT_EQ("Required key LibrePCBLicense/Name missing in the metainfo",
             str(License::detect(MissingNameKey)));
 
