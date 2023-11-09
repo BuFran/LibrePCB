@@ -155,6 +155,7 @@
         <file>places/folder_open_gray.png</file>
         <file>places/folder_open_green.png</file>
         <file>places/project_folder.png</file>
+        <file>places/www.png</file>
         <file>status/dialog_error.png</file>
         <file>status/dialog_warning.png</file>
         <file>status/info.png</file>

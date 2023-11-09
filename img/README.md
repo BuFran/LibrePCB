@@ -74,6 +74,7 @@ command_toolbars/align_vertical_bottom.png icons/png/48x48/actions/align-vertica
 command_toolbars/align_vertical_center.png icons/png/48x48/actions/align-vertical-center-2.png CC-BY-SA 3.0 or LGPL
 command_toolbars/align_vertical_top.png icons/png/48x48/actions/align-vertical-top-2.png CC-BY-SA 3.0 or LGPL
 command_toolbars/cancel.png icons/png/48x48/actions/dialog-cancel-4.png PD
+places/www.png icons/png/places/intrigue-style/www.png GPLv2
 status/locked.png icons/png/48x48/status/object-locked-2.png CC-BY-SA 3.0 or LGPL
 status/success.png icons/png/48x48/actions/dialog-accept.png PD
 status/unlocked.png icons/png/48x48/status/object-unlocked-2.png CC-BY-SA 3.0 or LGPL
