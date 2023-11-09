@@ -23,6 +23,7 @@
 #include "newprojectwizard.h"
 
 #include "newprojectwizardpage_initialization.h"
+#include "newprojectwizardpage_license.h"
 #include "newprojectwizardpage_metadata.h"
 #include "ui_newprojectwizard.h"
 
@@ -55,6 +56,7 @@ NewProjectWizard::NewProjectWizard(const Workspace& ws,
   mUi->setupUi(this);
 
   addPage(mPageMetadata = new NewProjectWizardPage_Metadata(mWorkspace, this));
+  addPage(mPageLicense = new NewProjectWizardPage_License(mWorkspace, this));
   addPage(mPageInitialization = new NewProjectWizardPage_Initialization(this));
 }
 
@@ -112,7 +114,7 @@ std::unique_ptr<Project> NewProjectWizard::createProject() const {
     project->addBoard(*board);
   }
 
-  auto license = mPageMetadata->getProjectLicense();
+  auto license = mPageLicense->getProjectLicense();
   // copy license file
   if (license.isSet()) {
     try {

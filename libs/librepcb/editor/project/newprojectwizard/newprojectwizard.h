@@ -41,6 +41,7 @@ class Workspace;
 namespace editor {
 
 class NewProjectWizardPage_Initialization;
+class NewProjectWizardPage_License;
 class NewProjectWizardPage_Metadata;
 
 //
@@ -82,6 +83,7 @@ private:  // Data
   const Workspace& mWorkspace;
   QScopedPointer<Ui::NewProjectWizard> mUi;
   NewProjectWizardPage_Metadata* mPageMetadata;
+  NewProjectWizardPage_License* mPageLicense;
   NewProjectWizardPage_Initialization* mPageInitialization;
   // NewProjectWizardPage_VersionControl* mPageVersionControl;
 };

@@ -685,6 +685,9 @@ add_library(
   project/newprojectwizard/newprojectwizardpage_initialization.cpp
   project/newprojectwizard/newprojectwizardpage_initialization.h
   project/newprojectwizard/newprojectwizardpage_initialization.ui
+  project/newprojectwizard/newprojectwizardpage_license.cpp
+  project/newprojectwizard/newprojectwizardpage_license.h
+  project/newprojectwizard/newprojectwizardpage_license.ui
   project/newprojectwizard/newprojectwizardpage_metadata.cpp
   project/newprojectwizard/newprojectwizardpage_metadata.h
   project/newprojectwizard/newprojectwizardpage_metadata.ui
