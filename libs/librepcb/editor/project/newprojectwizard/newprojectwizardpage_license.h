@@ -17,13 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
-#define LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
+#ifndef LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_LICENSE_H
+#define LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_LICENSE_H
 
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
 #include <librepcb/core/fileio/filepath.h>
+#include <librepcb/core/workspace/license.h>
 
 #include <QtCore>
 #include <QtWidgets>
@@ -38,53 +39,43 @@ class Workspace;
 namespace editor {
 
 namespace Ui {
-class NewProjectWizardPage_Metadata;
+class NewProjectWizardPage_License;
 }
 
 /*******************************************************************************
- *  Class NewProjectWizardPage_Metadata
+ *  Class NewProjectWizardPage_License
  ******************************************************************************/
 
 /**
- * @brief The NewProjectWizardPage_Metadata class
+ * @brief The NewProjectWizardPage_License class
  */
-class NewProjectWizardPage_Metadata final : public QWizardPage {
+class NewProjectWizardPage_License final : public QWizardPage {
   Q_OBJECT
+  Q_DISABLE_COPY(NewProjectWizardPage_License)
 
 public:
   // Constructors / Destructor
-  explicit NewProjectWizardPage_Metadata(const Workspace& ws,
-                                         QWidget* parent = nullptr) noexcept;
-  NewProjectWizardPage_Metadata(const NewProjectWizardPage_Metadata& other) =
-      delete;
-  ~NewProjectWizardPage_Metadata() noexcept;
+  explicit NewProjectWizardPage_License(const Workspace& ws,
+                                        QWidget* parent = nullptr) noexcept;
 
-  // Setters
-  void setDefaultLocation(const FilePath& dir) noexcept;
+  ~NewProjectWizardPage_License() noexcept;
 
   // Getters
-  QString getProjectName() const noexcept;
-  QString getProjectAuthor() const noexcept;
-  FilePath getFullFilePath() const noexcept;
-
-  // Operator Overloadings
-  NewProjectWizardPage_Metadata& operator=(
-      const NewProjectWizardPage_Metadata& rhs) = delete;
+  License getProjectLicense() const noexcept;
+  QList<QString> getFiles() const noexcept;
 
 private:  // GUI Action Handlers
-  void nameChanged(const QString& name) noexcept;
-  void locationChanged(const QString& dir) noexcept;
-  void chooseLocationClicked() noexcept;
+  void licenseChanged(int index) noexcept;
+  void openLink(const QString& url) noexcept;
 
 private:  // Methods
-  void updateProjectFilePath() noexcept;
   bool isComplete() const noexcept override;
   bool validatePage() noexcept override;
 
 private:  // Data
   const Workspace& mWorkspace;
-  QScopedPointer<Ui::NewProjectWizardPage_Metadata> mUi;
-  FilePath mFullFilePath;
+  QScopedPointer<Ui::NewProjectWizardPage_License> mUi;
+  License license{};
 };
 
 /*******************************************************************************

@@ -36,6 +36,7 @@
 namespace librepcb {
 
 class Library;
+class LicenseDb;
 class Project;
 class TransactionalFileSystem;
 class WorkspaceLibraryDb;
@@ -130,6 +131,8 @@ public:
    * @brief Get the workspace library database
    */
   WorkspaceLibraryDb& getLibraryDb() const { return *mLibraryDb; }
+
+  LicenseDb& getLicenses() const { return *mLicenses; }
 
   // General Methods
 
@@ -246,6 +249,8 @@ private:  // Data
 
   /// the library database
   QScopedPointer<WorkspaceLibraryDb> mLibraryDb;
+
+  QScopedPointer<LicenseDb> mLicenses;
 };
 
 /*******************************************************************************

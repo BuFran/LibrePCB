@@ -17,81 +17,55 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
-#define LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
+#ifndef LIBREPCB_CORE_LICENSEDB_H
+#define LIBREPCB_CORE_LICENSEDB_H
 
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
-#include <librepcb/core/fileio/filepath.h>
+#include "../fileio/filepath.h"
+#include "license.h"
 
 #include <QtCore>
-#include <QtWidgets>
 
 /*******************************************************************************
  *  Namespace / Forward Declarations
  ******************************************************************************/
 namespace librepcb {
 
-class Workspace;
-
-namespace editor {
-
-namespace Ui {
-class NewProjectWizardPage_Metadata;
-}
-
 /*******************************************************************************
- *  Class NewProjectWizardPage_Metadata
+ *  Class MathParser
  ******************************************************************************/
 
 /**
- * @brief The NewProjectWizardPage_Metadata class
+ * @brief License information database
+ *
+ * This class holds all licenses that can be used in the project
  */
-class NewProjectWizardPage_Metadata final : public QWizardPage {
-  Q_OBJECT
-
+class LicenseDb final {
 public:
-  // Constructors / Destructor
-  explicit NewProjectWizardPage_Metadata(const Workspace& ws,
-                                         QWidget* parent = nullptr) noexcept;
-  NewProjectWizardPage_Metadata(const NewProjectWizardPage_Metadata& other) =
-      delete;
-  ~NewProjectWizardPage_Metadata() noexcept;
-
-  // Setters
-  void setDefaultLocation(const FilePath& dir) noexcept;
-
   // Getters
-  QString getProjectName() const noexcept;
-  QString getProjectAuthor() const noexcept;
-  FilePath getFullFilePath() const noexcept;
+  /**
+   * @brief Get all available (installed) licenses
+   * @return licenses loaded at startup
+   */
+  QList<License> all() const { return mLicenses; }
 
-  // Operator Overloadings
-  NewProjectWizardPage_Metadata& operator=(
-      const NewProjectWizardPage_Metadata& rhs) = delete;
+  // Methods
+  /**
+   * @brief Add directory containing available licenses to database
+   * @param fp path to directory
+   */
+  void addLicenses(const FilePath& fp);
 
-private:  // GUI Action Handlers
-  void nameChanged(const QString& name) noexcept;
-  void locationChanged(const QString& dir) noexcept;
-  void chooseLocationClicked() noexcept;
-
-private:  // Methods
-  void updateProjectFilePath() noexcept;
-  bool isComplete() const noexcept override;
-  bool validatePage() noexcept override;
-
-private:  // Data
-  const Workspace& mWorkspace;
-  QScopedPointer<Ui::NewProjectWizardPage_Metadata> mUi;
-  FilePath mFullFilePath;
+private:
+  QList<License> mLicenses{License()};  ///< database of licenses
 };
 
 /*******************************************************************************
  *  End of File
  ******************************************************************************/
 
-}  // namespace editor
 }  // namespace librepcb
 
 #endif

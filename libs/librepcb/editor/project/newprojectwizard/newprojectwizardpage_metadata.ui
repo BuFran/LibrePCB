@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>586</width>
-    <height>224</height>
+    <height>250</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -61,27 +61,23 @@
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QLabel" name="label_6">
-     <property name="text">
-      <string>License:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>Location:</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="edtLocation"/>
+   </item>
+   <item row="3" column="0">
     <widget class="QLabel" name="label_7">
      <property name="text">
       <string>Full Path:</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="3" column="1">
     <widget class="QLabel" name="lblFullFilePath">
      <property name="font">
       <font>
@@ -99,14 +95,14 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="0" colspan="2">
+   <item row="5" column="0" colspan="2">
     <widget class="Line" name="line">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item row="8" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="label_5">
      <property name="minimumSize">
       <size>
@@ -131,62 +127,10 @@
      </property>
     </widget>
    </item>
-   <item row="8" column="1">
+   <item row="6" column="1">
     <widget class="QLabel" name="label_9">
      <property name="text">
       <string>A LibrePCB project consists of a whole directory, not only of a single file. Just select the new project's parent directory, and the subdirectory and filename will be set automatically.</string>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QComboBox" name="cbxLicense">
-       <property name="sizeAdjustPolicy">
-        <enum>QComboBox::AdjustToContents</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="lblLicenseLink">
-       <property name="minimumSize">
-        <size>
-         <width>25</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>25</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="toolTip">
-        <string>https://en.wikipedia.org/wiki/Creative_Commons_license</string>
-       </property>
-       <property name="text">
-        <string notr="true">&lt;a href=&quot;https://en.wikipedia.org/wiki/Creative_Commons_license&quot;&gt;&lt;img src=&quot;:/img/status/info.png&quot; width=&quot;25&quot; height=&quot;25&quot;/&gt;&lt;/a&gt;</string>
-       </property>
-       <property name="scaledContents">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="3" column="1">
-    <widget class="QLineEdit" name="edtLocation"/>
-   </item>
-   <item row="9" column="1">
-    <widget class="QLabel" name="lblLicenseAdditionalActions">
-     <property name="text">
-      <string>Additional actions might be required to fully license the project. See the license text for more information.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

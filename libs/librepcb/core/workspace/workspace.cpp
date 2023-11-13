@@ -31,6 +31,8 @@
 #include "../library/library.h"
 #include "../project/project.h"
 #include "../serialization/fileformatmigration.h"
+#include "license.h"
+#include "licensedb.h"
 #include "workspacelibrarydb.h"
 #include "workspacesettings.h"
 
@@ -56,7 +58,8 @@ Workspace::Workspace(const FilePath& wsPath, const QString& dataDirName,
     mLibrariesPath(mDataPath.getPathTo("libraries")),
     mFileSystem(),
     mWorkspaceSettings(),
-    mLibraryDb() {
+    mLibraryDb(),
+    mLicenses() {
   qDebug().nospace() << "Open workspace data directory " << mDataPath.toNative()
                      << "...";
 
@@ -124,6 +127,11 @@ Workspace::Workspace(const FilePath& wsPath, const QString& dataDirName,
   // Load library database.
   FileUtils::makePath(mLibrariesPath);  // can throw
   mLibraryDb.reset(new WorkspaceLibraryDb(mLibrariesPath));  // can throw
+
+  // parse all available licenses
+  mLicenses.reset(new LicenseDb());  // can throw
+  mLicenses->addLicenses(Application::getResourcesDir().getPathTo("licenses"));
+  mLicenses->addLicenses(wsPath.getPathTo("licenses"));
 
   // Done!
   qDebug("Successfully opened workspace.");

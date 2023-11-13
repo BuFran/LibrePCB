@@ -17,81 +17,88 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
-#define LIBREPCB_EDITOR_NEWPROJECTWIZARDPAGE_METADATA_H
+#ifndef LIBREPCB_CORE_LICENSE_H
+#define LIBREPCB_CORE_LICENSE_H
 
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
-#include <librepcb/core/fileio/filepath.h>
+#include "../fileio/filepath.h"
 
 #include <QtCore>
-#include <QtWidgets>
 
 /*******************************************************************************
  *  Namespace / Forward Declarations
  ******************************************************************************/
 namespace librepcb {
 
-class Workspace;
-
-namespace editor {
-
-namespace Ui {
-class NewProjectWizardPage_Metadata;
-}
-
 /*******************************************************************************
- *  Class NewProjectWizardPage_Metadata
+ *  Class MathParser
  ******************************************************************************/
 
 /**
- * @brief The NewProjectWizardPage_Metadata class
+ * @brief License information parser
+ *
+ * This class holds all information needed for licensing of new project
  */
-class NewProjectWizardPage_Metadata final : public QWizardPage {
-  Q_OBJECT
+class License final {
+  Q_DECLARE_TR_FUNCTIONS(License)
 
 public:
   // Constructors / Destructor
-  explicit NewProjectWizardPage_Metadata(const Workspace& ws,
-                                         QWidget* parent = nullptr) noexcept;
-  NewProjectWizardPage_Metadata(const NewProjectWizardPage_Metadata& other) =
-      delete;
-  ~NewProjectWizardPage_Metadata() noexcept;
+  explicit License(const FilePath& path = FilePath()) noexcept;
 
   // Setters
-  void setDefaultLocation(const FilePath& dir) noexcept;
-
   // Getters
-  QString getProjectName() const noexcept;
-  QString getProjectAuthor() const noexcept;
-  FilePath getFullFilePath() const noexcept;
+  /**
+   * @brief is this license not empty ?
+   */
+  bool isSet() const { return mPath.isValid(); }
+  /**
+   * @brief Get the displayed name of the license
+   */
+  QString getName() const { return mName; }
+  /**
+   * @brief Get the path of license folder
+   */
+  FilePath getPath() const { return mPath; };
+  /**
+   * @brief Get the link (url) to show to the user
+   */
+  QString getLink() const { return mLink; }
 
-  // Operator Overloadings
-  NewProjectWizardPage_Metadata& operator=(
-      const NewProjectWizardPage_Metadata& rhs) = delete;
+  /**
+   * @brief Get the additional steps user need to run
+   */
+  bool getAdditional() const { return mAdditional; }
 
-private:  // GUI Action Handlers
-  void nameChanged(const QString& name) noexcept;
-  void locationChanged(const QString& dir) noexcept;
-  void chooseLocationClicked() noexcept;
+  /**
+   * @brief Get all files connected to this license
+   *
+   * @return list of files to be copied to project
+   */
+  QList<FilePath> getFiles() const;
 
-private:  // Methods
-  void updateProjectFilePath() noexcept;
-  bool isComplete() const noexcept override;
-  bool validatePage() noexcept override;
+  /**
+   * @brief Returns all issues with the license
+   *
+   * @param path the path to test license
+   */
+  static QList<QString> detect(const FilePath& path) noexcept;
 
-private:  // Data
-  const Workspace& mWorkspace;
-  QScopedPointer<Ui::NewProjectWizardPage_Metadata> mUi;
-  FilePath mFullFilePath;
+private:
+  FilePath mPath;  ///< License root directory
+  QString mName{};  ///< license displayed name
+  QString mLink{};  ///< license link
+  bool mAdditional{false};
 };
 
 /*******************************************************************************
  *  End of File
  ******************************************************************************/
 
-}  // namespace editor
 }  // namespace librepcb
+
+Q_DECLARE_METATYPE(librepcb::License)
 
 #endif

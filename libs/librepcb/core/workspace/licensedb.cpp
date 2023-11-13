@@ -17,82 +17,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_EDITOR_NEWPROJECTWIZARD_H
-#define LIBREPCB_EDITOR_NEWPROJECTWIZARD_H
-
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
-#include <librepcb/core/fileio/filepath.h>
+#include "licensedb.h"
+
+#include "../fileio/fileutils.h"
 
 #include <QtCore>
-#include <QtWidgets>
-
-#include <memory>
 
 /*******************************************************************************
- *  Namespace / Forward Declarations
+ *  Namespace
  ******************************************************************************/
 namespace librepcb {
 
-class Project;
-class Workspace;
-
-namespace editor {
-
-class NewProjectWizardPage_Initialization;
-class NewProjectWizardPage_License;
-class NewProjectWizardPage_Metadata;
-
-//
-
-class NewProjectWizardPage_VersionControl;
-
-namespace Ui {
-class NewProjectWizard;
-}
-
 /*******************************************************************************
- *  Class NewProjectWizard
+ *  General Methods
  ******************************************************************************/
 
-/**
- * @brief The NewProjectWizard class
- */
-class NewProjectWizard final : public QWizard {
-  Q_OBJECT
+void LicenseDb::addLicenses(const FilePath& dir) {
+  if (!dir.isValid() || !dir.isExistingDir()) {
+    return;
+  }
 
-public:
-  // Constructors / Destructor
-  NewProjectWizard() = delete;
-  NewProjectWizard(const NewProjectWizard& other) = delete;
-  explicit NewProjectWizard(const Workspace& ws,
-                            QWidget* parent = nullptr) noexcept;
-  ~NewProjectWizard() noexcept;
-
-  // Setters
-  void setLocation(const FilePath& dir) noexcept;
-
-  // General Methods
-  std::unique_ptr<Project> createProject() const;
-
-  // Operator Overloadings
-  NewProjectWizard& operator=(const NewProjectWizard& rhs) = delete;
-
-private:  // Data
-  const Workspace& mWorkspace;
-  QScopedPointer<Ui::NewProjectWizard> mUi;
-  NewProjectWizardPage_Metadata* mPageMetadata;
-  NewProjectWizardPage_License* mPageLicense;
-  NewProjectWizardPage_Initialization* mPageInitialization;
-  // NewProjectWizardPage_VersionControl* mPageVersionControl;
-};
+  foreach (const FilePath& fp, FileUtils::findDirectories(dir)) {
+    if (License::detect(fp).isEmpty()) {
+      mLicenses.append(License(fp));
+    }
+  }
+}
 
 /*******************************************************************************
  *  End of File
  ******************************************************************************/
 
-}  // namespace editor
 }  // namespace librepcb
-
-#endif

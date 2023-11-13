@@ -67,43 +67,9 @@ NewProjectWizardPage_Metadata::NewProjectWizardPage_Metadata(
           &NewProjectWizardPage_Metadata::nameChanged);
   connect(mUi->edtLocation, &QLineEdit::textChanged, this,
           &NewProjectWizardPage_Metadata::locationChanged);
-  connect(mUi->lblLicenseLink, &QLabel::linkActivated, this,
-          [this](const QString& url) {
-            DesktopServices ds(mWorkspace.getSettings(), this);
-            ds.openWebUrl(QUrl(url));
-          });
 
   // insert values
   mUi->edtAuthor->setText(ws.getSettings().userName.get());
-  mUi->cbxLicense->addItem(tr("None"), QString());
-  mUi->cbxLicense->addItem(tr("CC0-1.0 (no restrictions)"),
-                           QString("licenses/cc0-1.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-4.0 (requires attribution)"),
-                           QString("licenses/cc-by-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-SA-4.0 (requires attribution + share alike)"),
-      QString("licenses/cc-by-sa-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-NC-4.0 (requires attribution + non commercial)"),
-      QString("licenses/cc-by-nc-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-NC-SA-4.0 (requires attribution + non "
-                              "commercial + share alike)"),
-                           QString("licenses/cc-by-nc-sa-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("CC-BY-NC-ND-4.0 (requires attribution + non "
-                              "commercial + no derivatives)"),
-                           QString("licenses/cc-by-nc-nd-4.0.txt"));
-  mUi->cbxLicense->addItem(
-      tr("CC-BY-ND-4.0 (requires attribution + no derivatives)"),
-      QString("licenses/cc-by-nd-4.0.txt"));
-  mUi->cbxLicense->addItem(tr("TAPR-OHL-1.0"),
-                           QString("licenses/tapr-ohl-1.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-P-2.0 (permissive)"),
-                           QString("licenses/cern-ohl-p-2.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-W-2.0 (weakly reciprocal)"),
-                           QString("licenses/cern-ohl-w-2.0.txt"));
-  mUi->cbxLicense->addItem(tr("CERN-OHL-S-2.0 (strongly reciprocal)"),
-                           QString("licenses/cern-ohl-s-2.0.txt"));
-  mUi->cbxLicense->setCurrentIndex(0);  // no license
 }
 
 NewProjectWizardPage_Metadata::~NewProjectWizardPage_Metadata() noexcept {
@@ -130,21 +96,6 @@ QString NewProjectWizardPage_Metadata::getProjectName() const noexcept {
 
 QString NewProjectWizardPage_Metadata::getProjectAuthor() const noexcept {
   return mUi->edtAuthor->text();
-}
-
-bool NewProjectWizardPage_Metadata::isLicenseSet() const noexcept {
-  return !mUi->cbxLicense->currentData(Qt::UserRole).toString().isEmpty();
-}
-
-FilePath NewProjectWizardPage_Metadata::getProjectLicenseFilePath() const
-    noexcept {
-  QString licenseFileName =
-      mUi->cbxLicense->currentData(Qt::UserRole).toString();
-  if (!licenseFileName.isEmpty()) {
-    return Application::getResourcesDir().getPathTo(licenseFileName);
-  } else {
-    return FilePath();
-  }
 }
 
 FilePath NewProjectWizardPage_Metadata::getFullFilePath() const noexcept {
