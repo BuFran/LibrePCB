@@ -46,8 +46,10 @@ class Workspace;
 namespace editor {
 
 class ExclusiveActionGroup;
+class IF_DockProvider;
 class IF_GraphicsLayerProvider;
 class StatusBar;
+class SymbolMetadataDock;
 class ToolBarProxy;
 class UndoStackActionGroup;
 
@@ -70,6 +72,7 @@ public:
     bool elementIsNewlyCreated;
     bool readOnly;
     const Library* library;
+    IF_DockProvider& dockProvider;
   };
 
   enum Tool {
@@ -267,6 +270,21 @@ inline uint qHash(const EditorWidgetBase::Feature& feature,
                   uint seed = 0) noexcept {
   return ::qHash(static_cast<int>(feature), seed);
 }
+
+/*******************************************************************************
+ *  Interface IF_DockProvider
+ ******************************************************************************/
+
+/**
+ * @brief The IF_DockProvider class defines an interface for access to all
+ * dockable windows on the library editor
+ */
+class IF_DockProvider {
+public:
+  virtual ~IF_DockProvider() noexcept = default;
+  virtual std::shared_ptr<SymbolMetadataDock>
+      getDockSymbolMetadata() noexcept = 0;
+};
 
 /*******************************************************************************
  *  End of File

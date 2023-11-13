@@ -63,7 +63,8 @@ class LibraryEditor;
  * @brief The LibraryEditor class
  */
 class LibraryEditor final : public QMainWindow,
-                            public IF_GraphicsLayerProvider {
+                            public IF_GraphicsLayerProvider,
+                            public IF_DockProvider {
   Q_OBJECT
 
 public:
@@ -76,8 +77,8 @@ public:
   /**
    * @copydoc ::librepcb::editor::IF_GraphicsLayerProvider::getLayer()
    */
-  std::shared_ptr<GraphicsLayer> getLayer(const QString& name) const
-      noexcept override {
+  std::shared_ptr<GraphicsLayer> getLayer(
+      const QString& name) const noexcept override {
     foreach (const std::shared_ptr<GraphicsLayer>& layer, mLayers) {
       if (layer->getName() == name) {
         return layer;
@@ -92,6 +93,8 @@ public:
   QList<std::shared_ptr<GraphicsLayer>> getAllLayers() const noexcept override {
     return mLayers;
   }
+
+  std::shared_ptr<SymbolMetadataDock> getDockSymbolMetadata() noexcept override;
 
   /**
    * @brief Close the library editor (this will destroy this object!)
@@ -152,6 +155,7 @@ private:  // Methods
   void createActions() noexcept;
   void createToolBars() noexcept;
   void createMenus() noexcept;
+  void createDocks() noexcept;
   EditorWidgetBase::Context createContext(bool isNewElement) noexcept;
   void setAvailableFeatures(
       const QSet<EditorWidgetBase::Feature>& features) noexcept;
@@ -263,6 +267,8 @@ private:  // Data
   QScopedPointer<SearchToolBar> mToolBarSearch;
   QScopedPointer<QToolBar> mToolBarCommand;
   QScopedPointer<QToolBar> mToolBarTools;
+
+  std::shared_ptr<SymbolMetadataDock> mDockSymbolMetadata;
 };
 
 /*******************************************************************************

@@ -378,6 +378,9 @@ add_library(
   library/sym/symboleditorwidget.ui
   library/sym/symbolgraphicsitem.cpp
   library/sym/symbolgraphicsitem.h
+  library/sym/symbolmetadatadock.cpp
+  library/sym/symbolmetadatadock.h
+  library/sym/symbolmetadatadock.ui
   library/sym/symbolpingraphicsitem.cpp
   library/sym/symbolpingraphicsitem.h
   library/sym/symbolpinpropertiesdialog.cpp

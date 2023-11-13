@@ -24,7 +24,6 @@
  *  Includes
  ******************************************************************************/
 #include "../../widgets/if_graphicsvieweventhandler.h"
-#include "../cat/categorylisteditorwidget.h"
 #include "../editorwidgetbase.h"
 
 #include <librepcb/core/types/lengthunit.h>
@@ -47,6 +46,7 @@ namespace editor {
 class GraphicsScene;
 class SymbolEditorFsm;
 class SymbolGraphicsItem;
+class SymbolMetadataDock;
 
 namespace Ui {
 class SymbolEditorWidget;
@@ -129,10 +129,9 @@ private:  // Methods
 
 private:  // Data
   QScopedPointer<Ui::SymbolEditorWidget> mUi;
-  QScopedPointer<CategoryListEditorWidget> mCategoriesEditorWidget;
   QScopedPointer<GraphicsScene> mGraphicsScene;
   LengthUnit mLengthUnit;
-  std::unique_ptr<Symbol> mSymbol;
+  std::shared_ptr<Symbol> mSymbol;
   QScopedPointer<SymbolGraphicsItem> mGraphicsItem;
 
   /// Broken interface detection

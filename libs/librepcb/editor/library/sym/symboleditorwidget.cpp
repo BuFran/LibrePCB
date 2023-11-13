@@ -35,6 +35,7 @@
 #include "../cmd/cmdsymbolpinedit.h"
 #include "fsm/symboleditorfsm.h"
 #include "symbolgraphicsitem.h"
+#include "symbolmetadatadock.h"
 #include "ui_symboleditorwidget.h"
 
 #include <librepcb/core/library/cmp/cmpsigpindisplaytype.h>
@@ -65,14 +66,7 @@ SymbolEditorWidget::SymbolEditorWidget(const Context& context,
     mUi(new Ui::SymbolEditorWidget),
     mGraphicsScene(new GraphicsScene()) {
   mUi->setupUi(this);
-  mUi->lstMessages->setHandler(this);
-  mUi->lstMessages->setReadOnly(mContext.readOnly);
-  mUi->edtName->setReadOnly(mContext.readOnly);
-  mUi->edtDescription->setReadOnly(mContext.readOnly);
-  mUi->edtKeywords->setReadOnly(mContext.readOnly);
-  mUi->edtAuthor->setReadOnly(mContext.readOnly);
-  mUi->edtVersion->setReadOnly(mContext.readOnly);
-  mUi->cbxDeprecated->setCheckable(!mContext.readOnly);
+
   setupErrorNotificationWidget(*mUi->errorNotificationWidget);
   const Theme& theme = mContext.workspace.getSettings().themes.getActive();
   mUi->graphicsView->setBackgroundColors(
@@ -105,22 +99,9 @@ SymbolEditorWidget::SymbolEditorWidget(const Context& context,
                     mContext.workspace.getSettings().defaultLengthUnit.get(),
                     theme.getBoardGridStyle());
 
-  // Insert category list editor widget.
-  mCategoriesEditorWidget.reset(new CategoryListEditorWidget(
-      mContext.workspace, CategoryListEditorWidget::Categories::Component,
-      this));
-  mCategoriesEditorWidget->setReadOnly(mContext.readOnly);
-  mCategoriesEditorWidget->setRequiresMinimumOneEntry(true);
-  int row;
-  QFormLayout::ItemRole role;
-  mUi->formLayout->getWidgetPosition(mUi->lblCategories, &row, &role);
-  mUi->formLayout->setWidget(row, QFormLayout::FieldRole,
-                             mCategoriesEditorWidget.data());
-
   // Load element.
   mSymbol = Symbol::open(std::unique_ptr<TransactionalDirectory>(
       new TransactionalDirectory(mFileSystem)));  // can throw
-  updateMetadata();
 
   // Show "interface broken" warning when related properties are modified.
   mOriginalSymbolPinUuids = mSymbol->getPins().getUuidSet();
@@ -129,22 +110,6 @@ SymbolEditorWidget::SymbolEditorWidget(const Context& context,
   // Reload metadata on undo stack state changes.
   connect(mUndoStack.data(), &UndoStack::stateModified, this,
           &SymbolEditorWidget::updateMetadata);
-
-  // Handle changes of metadata.
-  connect(mUi->edtName, &QLineEdit::editingFinished, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mUi->edtDescription, &PlainTextEdit::editingFinished, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mUi->edtKeywords, &QLineEdit::editingFinished, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mUi->edtAuthor, &QLineEdit::editingFinished, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mUi->edtVersion, &QLineEdit::editingFinished, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mUi->cbxDeprecated, &QCheckBox::clicked, this,
-          &SymbolEditorWidget::commitMetadata);
-  connect(mCategoriesEditorWidget.data(), &CategoryListEditorWidget::edited,
-          this, &SymbolEditorWidget::commitMetadata);
 
   // Load graphics items recursively.
   mGraphicsItem.reset(new SymbolGraphicsItem(*mSymbol, mContext.layerProvider));
@@ -188,8 +153,8 @@ SymbolEditorWidget::~SymbolEditorWidget() noexcept {
  *  Getters
  ******************************************************************************/
 
-QSet<EditorWidgetBase::Feature> SymbolEditorWidget::getAvailableFeatures() const
-    noexcept {
+QSet<EditorWidgetBase::Feature> SymbolEditorWidget::getAvailableFeatures()
+    const noexcept {
   QSet<EditorWidgetBase::Feature> features = {
       EditorWidgetBase::Feature::Close,
       EditorWidgetBase::Feature::GraphicsView,
@@ -229,6 +194,14 @@ void SymbolEditorWidget::connectEditor(
   mStatusBar->setLengthUnit(mLengthUnit);
   connect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
           mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  auto dock = mContext.dockProvider.getDockSymbolMetadata();
+  dock->connectItem(mSymbol, &mContext, this);
+
+  updateMetadata();
+  undoStackStateModified();
+  connect(dock.get(), &SymbolMetadataDock::modified, this,
+          &SymbolEditorWidget::commitMetadata);
 }
 
 void SymbolEditorWidget::disconnectEditor() noexcept {
@@ -238,6 +211,12 @@ void SymbolEditorWidget::disconnectEditor() noexcept {
   mStatusBar->setField(StatusBar::AbsolutePosition, false);
   disconnect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
              mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  auto dock = mContext.dockProvider.getDockSymbolMetadata();
+  disconnect(dock.get(), &SymbolMetadataDock::modified, this,
+             &SymbolEditorWidget::commitMetadata);
+
+  dock->disconnectItem();
 
   EditorWidgetBase::disconnectEditor();
 }
@@ -363,40 +342,15 @@ bool SymbolEditorWidget::decreaseGridInterval() noexcept {
  ******************************************************************************/
 
 void SymbolEditorWidget::updateMetadata() noexcept {
+  mContext.dockProvider.getDockSymbolMetadata()->updateDisplay();
   setWindowTitle(*mSymbol->getNames().getDefaultValue());
-  mUi->edtName->setText(*mSymbol->getNames().getDefaultValue());
-  mUi->edtDescription->setPlainText(
-      mSymbol->getDescriptions().getDefaultValue());
-  mUi->edtKeywords->setText(mSymbol->getKeywords().getDefaultValue());
-  mUi->edtAuthor->setText(mSymbol->getAuthor());
-  mUi->edtVersion->setText(mSymbol->getVersion().toStr());
-  mUi->cbxDeprecated->setChecked(mSymbol->isDeprecated());
-  mUi->lstMessages->setApprovals(mSymbol->getMessageApprovals());
-  mCategoriesEditorWidget->setUuids(mSymbol->getCategories());
 }
 
 QString SymbolEditorWidget::commitMetadata() noexcept {
   try {
-    QScopedPointer<CmdLibraryElementEdit> cmd(
-        new CmdLibraryElementEdit(*mSymbol, tr("Edit symbol metadata")));
-    try {
-      // throws on invalid name
-      cmd->setName("", ElementName(mUi->edtName->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDescription("", mUi->edtDescription->toPlainText().trimmed());
-    cmd->setKeywords("", mUi->edtKeywords->text().trimmed());
-    try {
-      // throws on invalid version
-      cmd->setVersion(Version::fromString(mUi->edtVersion->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setAuthor(mUi->edtAuthor->text().trimmed());
-    cmd->setDeprecated(mUi->cbxDeprecated->isChecked());
-    cmd->setCategories(mCategoriesEditorWidget->getUuids());
-
     // Commit all changes.
-    mUndoStack->execCmd(cmd.take());  // can throw
+    mUndoStack->execCmd(mContext.dockProvider.getDockSymbolMetadata()
+                            ->commitChanges());  // can throw
 
     // Reload metadata into widgets to discard invalid input.
     updateMetadata();
@@ -456,7 +410,9 @@ bool SymbolEditorWidget::graphicsViewEventHandler(QEvent* event) noexcept {
       Q_ASSERT(e);
       return mFsm->processKeyReleased(*e);
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 }
 
@@ -504,27 +460,26 @@ bool SymbolEditorWidget::runChecks(RuleCheckMessageList& msgs) const {
     return false;
   }
   msgs = mSymbol->runChecks();  // can throw
-  mUi->lstMessages->setMessages(msgs);
+  mContext.dockProvider.getDockSymbolMetadata()->setMessages(msgs);
   return true;
 }
 
 template <>
 void SymbolEditorWidget::fixMsg(const MsgNameNotTitleCase& msg) {
-  mUi->edtName->setText(*msg.getFixedName());
-  commitMetadata();
+  mContext.dockProvider.getDockSymbolMetadata()->setName(*msg.getFixedName());
 }
 
 template <>
 void SymbolEditorWidget::fixMsg(const MsgMissingAuthor& msg) {
-  Q_UNUSED(msg);
-  mUi->edtAuthor->setText(getWorkspaceSettingsUserName());
-  commitMetadata();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockSymbolMetadata()->setAuthor(
+      getWorkspaceSettingsUserName());
 }
 
 template <>
 void SymbolEditorWidget::fixMsg(const MsgMissingCategories& msg) {
-  Q_UNUSED(msg);
-  mCategoriesEditorWidget->openAddCategoryDialog();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockSymbolMetadata()->addCategory();
 }
 
 template <>

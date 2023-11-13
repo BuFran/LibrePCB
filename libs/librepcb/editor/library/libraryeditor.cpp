@@ -37,6 +37,7 @@
 #include "lib/libraryoverviewwidget.h"
 #include "pkg/packageeditorwidget.h"
 #include "sym/symboleditorwidget.h"
+#include "sym/symbolmetadatadock.h"
 #include "ui_libraryeditor.h"
 
 #include <librepcb/core/application.h>
@@ -78,6 +79,7 @@ LibraryEditor::LibraryEditor(Workspace& ws, const FilePath& libFp,
   createActions();
   createToolBars();
   createMenus();
+  createDocks();
 
   // If the library was opened in read-only mode, we guess that it's a remote
   // library and thus show a warning that all modifications are lost after the
@@ -951,11 +953,18 @@ void LibraryEditor::createMenus() noexcept {
   mb.addAction(mActionAboutQt);
 }
 
+void LibraryEditor::createDocks() noexcept {
+  mDockSymbolMetadata.reset(new SymbolMetadataDock(mWorkspace));
+
+  addDockWidget(Qt::RightDockWidgetArea, mDockSymbolMetadata.get(),
+                Qt::Vertical);
+
+  mDockSymbolMetadata->hide();
+}
+
 EditorWidgetBase::Context LibraryEditor::createContext(
     bool isNewElement) noexcept {
-  return {
-      mWorkspace, *this, isNewElement, mIsOpenedReadOnly, mLibrary,
-  };
+  return {mWorkspace, *this, isNewElement, mIsOpenedReadOnly, mLibrary, *this};
 }
 
 void LibraryEditor::setAvailableFeatures(
@@ -1158,6 +1167,11 @@ void LibraryEditor::addLayer(const QString& name) noexcept {
   }
   mLayers.append(std::make_shared<GraphicsLayer>(name, color.getNameTr(),
                                                  primary, secondary));
+}
+
+std::shared_ptr<SymbolMetadataDock>
+    LibraryEditor::getDockSymbolMetadata() noexcept {
+  return mDockSymbolMetadata;
 }
 
 /*******************************************************************************
