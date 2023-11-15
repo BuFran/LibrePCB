@@ -26,6 +26,7 @@
 #include "../cmd/cmdcomponentedit.h"
 #include "../cmd/cmdcomponentsignaledit.h"
 #include "../cmd/cmdcomponentsymbolvariantedit.h"
+#include "componentmetadatadock.h"
 #include "componentsymbolvarianteditdialog.h"
 #include "ui_componenteditorwidget.h"
 
@@ -52,34 +53,12 @@ ComponentEditorWidget::ComponentEditorWidget(const Context& context,
                                              QWidget* parent)
   : EditorWidgetBase(context, fp, parent), mUi(new Ui::ComponentEditorWidget) {
   mUi->setupUi(this);
-  mUi->lstMessages->setHandler(this);
-  mUi->lstMessages->setReadOnly(mContext.readOnly);
-  mUi->edtName->setReadOnly(mContext.readOnly);
-  mUi->edtDescription->setReadOnly(mContext.readOnly);
-  mUi->edtKeywords->setReadOnly(mContext.readOnly);
-  mUi->edtAuthor->setReadOnly(mContext.readOnly);
-  mUi->edtVersion->setReadOnly(mContext.readOnly);
-  mUi->cbxDeprecated->setCheckable(!mContext.readOnly);
-  mUi->cbxSchematicOnly->setCheckable(!mContext.readOnly);
-  mUi->edtPrefix->setReadOnly(mContext.readOnly);
-  mUi->edtDefaultValue->setReadOnly(mContext.readOnly);
+
   mUi->signalEditorWidget->setReadOnly(mContext.readOnly);
   mUi->symbolVariantsEditorWidget->setReadOnly(mContext.readOnly);
   mUi->attributesEditorWidget->setReadOnly(mContext.readOnly);
   setupErrorNotificationWidget(*mUi->errorNotificationWidget);
   setWindowIcon(QIcon(":/img/library/component.png"));
-
-  // Insert category list editor widget.
-  mCategoriesEditorWidget.reset(new CategoryListEditorWidget(
-      mContext.workspace, CategoryListEditorWidget::Categories::Component,
-      this));
-  mCategoriesEditorWidget->setReadOnly(mContext.readOnly);
-  mCategoriesEditorWidget->setRequiresMinimumOneEntry(true);
-  int row;
-  QFormLayout::ItemRole role;
-  mUi->formLayout->getWidgetPosition(mUi->lblCategories, &row, &role);
-  mUi->formLayout->setWidget(row, QFormLayout::FieldRole,
-                             mCategoriesEditorWidget.data());
 
   // Load element.
   mComponent.reset(Component::open(std::unique_ptr<TransactionalDirectory>(
@@ -89,7 +68,6 @@ ComponentEditorWidget::ComponentEditorWidget(const Context& context,
                                          &mComponent->getSignals());
   mUi->symbolVariantsEditorWidget->setReferences(
       mUndoStack.data(), &mComponent->getSymbolVariants(), this);
-  updateMetadata();
 
   // Load attribute editor.
   mUi->attributesEditorWidget->setReferences(mUndoStack.data(),
@@ -98,34 +76,10 @@ ComponentEditorWidget::ComponentEditorWidget(const Context& context,
   // Show "interface broken" warning when related properties are modified.
   memorizeComponentInterface();
   setupInterfaceBrokenWarningWidget(*mUi->interfaceBrokenWarningWidget);
-  connect(mUi->cbxSchematicOnly, &QCheckBox::toggled, this,
-          &ComponentEditorWidget::undoStackStateModified);
 
   // Reload metadata on undo stack state changes.
   connect(mUndoStack.data(), &UndoStack::stateModified, this,
           &ComponentEditorWidget::updateMetadata);
-
-  // Handle changes of metadata.
-  connect(mUi->edtName, &QLineEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtDescription, &PlainTextEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtKeywords, &QLineEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtAuthor, &QLineEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtVersion, &QLineEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->cbxDeprecated, &QCheckBox::clicked, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mCategoriesEditorWidget.data(), &CategoryListEditorWidget::edited,
-          this, &ComponentEditorWidget::commitMetadata);
-  connect(mUi->cbxSchematicOnly, &QCheckBox::clicked, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtPrefix, &QLineEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
-  connect(mUi->edtDefaultValue, &PlainTextEdit::editingFinished, this,
-          &ComponentEditorWidget::commitMetadata);
 }
 
 ComponentEditorWidget::~ComponentEditorWidget() noexcept {
@@ -143,6 +97,35 @@ QSet<EditorWidgetBase::Feature> ComponentEditorWidget::getAvailableFeatures()
   return {
       EditorWidgetBase::Feature::Close,
   };
+}
+
+/*******************************************************************************
+ *  Setters
+ ******************************************************************************/
+
+void ComponentEditorWidget::connectEditor(
+    UndoStackActionGroup& undoStackActionGroup,
+    ExclusiveActionGroup& toolsActionGroup, QToolBar& commandToolBar,
+    StatusBar& statusBar) noexcept {
+  EditorWidgetBase::connectEditor(undoStackActionGroup, toolsActionGroup,
+                                  commandToolBar, statusBar);
+  auto dock = mContext.dockProvider.getDockComponentMetadata();
+  dock->connectItem(mComponent, &mContext, this);
+
+  updateMetadata();
+  undoStackStateModified();
+  connect(dock.get(), &ComponentMetadataDock::modified, this,
+          &ComponentEditorWidget::commitMetadata);
+}
+
+void ComponentEditorWidget::disconnectEditor() noexcept {
+  auto dock = mContext.dockProvider.getDockComponentMetadata();
+  disconnect(dock.get(), &ComponentMetadataDock::modified, this,
+             &ComponentEditorWidget::commitMetadata);
+
+  dock->disconnectItem();
+
+  EditorWidgetBase::disconnectEditor();
 }
 
 /*******************************************************************************
@@ -179,48 +162,14 @@ bool ComponentEditorWidget::save() noexcept {
 
 void ComponentEditorWidget::updateMetadata() noexcept {
   setWindowTitle(*mComponent->getNames().getDefaultValue());
-  mUi->edtName->setText(*mComponent->getNames().getDefaultValue());
-  mUi->edtDescription->setPlainText(
-      mComponent->getDescriptions().getDefaultValue());
-  mUi->edtKeywords->setText(mComponent->getKeywords().getDefaultValue());
-  mUi->edtAuthor->setText(mComponent->getAuthor());
-  mUi->edtVersion->setText(mComponent->getVersion().toStr());
-  mUi->cbxDeprecated->setChecked(mComponent->isDeprecated());
-  mUi->lstMessages->setApprovals(mComponent->getMessageApprovals());
-  mCategoriesEditorWidget->setUuids(mComponent->getCategories());
-  mUi->cbxSchematicOnly->setChecked(mComponent->isSchematicOnly());
-  mUi->edtPrefix->setText(*mComponent->getPrefixes().getDefaultValue());
-  mUi->edtDefaultValue->setPlainText(mComponent->getDefaultValue());
+  mContext.dockProvider.getDockComponentMetadata()->updateData();
 }
 
 QString ComponentEditorWidget::commitMetadata() noexcept {
   try {
-    QScopedPointer<CmdComponentEdit> cmd(new CmdComponentEdit(*mComponent));
-    try {
-      // throws on invalid name
-      cmd->setName("", ElementName(mUi->edtName->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDescription("", mUi->edtDescription->toPlainText().trimmed());
-    cmd->setKeywords("", mUi->edtKeywords->text().trimmed());
-    try {
-      // throws on invalid version
-      cmd->setVersion(Version::fromString(mUi->edtVersion->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setAuthor(mUi->edtAuthor->text().trimmed());
-    cmd->setDeprecated(mUi->cbxDeprecated->isChecked());
-    cmd->setCategories(mCategoriesEditorWidget->getUuids());
-    cmd->setIsSchematicOnly(mUi->cbxSchematicOnly->isChecked());
-    try {
-      // throws on invalid prefix
-      cmd->setPrefix("", ComponentPrefix(mUi->edtPrefix->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDefaultValue(mUi->edtDefaultValue->toPlainText().trimmed());
-
     // Commit all changes.
-    mUndoStack->execCmd(cmd.take());  // can throw
+    mUndoStack->execCmd(mContext.dockProvider.getDockComponentMetadata()
+                            ->commitData());  // can throw
 
     // Reload metadata into widgets to discard invalid input.
     updateMetadata();
@@ -245,7 +194,8 @@ void ComponentEditorWidget::memorizeComponentInterface() noexcept {
 }
 
 bool ComponentEditorWidget::isInterfaceBroken() const noexcept {
-  if (mUi->cbxSchematicOnly->isChecked() != mOriginalIsSchematicOnly)
+  if (mContext.dockProvider.getDockComponentMetadata()->isSchematicOnly() !=
+      mOriginalIsSchematicOnly)
     return true;
   if (mComponent->getSignals().getUuidSet() != mOriginalSignalUuids)
     return true;
@@ -280,27 +230,27 @@ bool ComponentEditorWidget::isInterfaceBroken() const noexcept {
 
 bool ComponentEditorWidget::runChecks(RuleCheckMessageList& msgs) const {
   msgs = mComponent->runChecks();  // can throw
-  mUi->lstMessages->setMessages(msgs);
+  mContext.dockProvider.getDockComponentMetadata()->setMessages(msgs);
   return true;
 }
 
 template <>
 void ComponentEditorWidget::fixMsg(const MsgNameNotTitleCase& msg) {
-  mUi->edtName->setText(*msg.getFixedName());
-  commitMetadata();
+  mContext.dockProvider.getDockComponentMetadata()->setName(
+      *msg.getFixedName());
 }
 
 template <>
 void ComponentEditorWidget::fixMsg(const MsgMissingAuthor& msg) {
-  Q_UNUSED(msg);
-  mUi->edtAuthor->setText(getWorkspaceSettingsUserName());
-  commitMetadata();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockComponentMetadata()->setAuthor(
+      getWorkspaceSettingsUserName());
 }
 
 template <>
 void ComponentEditorWidget::fixMsg(const MsgMissingCategories& msg) {
-  Q_UNUSED(msg);
-  mCategoriesEditorWidget->openAddCategoryDialog();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockComponentMetadata()->addCategory();
 }
 
 template <>
@@ -314,11 +264,11 @@ void ComponentEditorWidget::fixMsg(const MsgMissingComponentDefaultValue& msg) {
   int answer = QMessageBox::question(this, title, question, QMessageBox::Cancel,
                                      QMessageBox::Yes, QMessageBox::No);
   if (answer == QMessageBox::Yes) {
-    mUi->edtDefaultValue->setPlainText("{{MPN or DEVICE or COMPONENT}}");
-    commitMetadata();
+    mContext.dockProvider.getDockComponentMetadata()->setDefaultValue(
+        "{{MPN or DEVICE or COMPONENT}}");
   } else if (answer == QMessageBox::No) {
-    mUi->edtDefaultValue->setPlainText("{{MPN or DEVICE}}");
-    commitMetadata();
+    mContext.dockProvider.getDockComponentMetadata()->setDefaultValue(
+        "{{MPN or DEVICE}}");
   }
 }
 

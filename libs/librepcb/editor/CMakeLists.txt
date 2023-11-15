@@ -177,6 +177,9 @@ add_library(
   library/cmp/componenteditorwidget.cpp
   library/cmp/componenteditorwidget.h
   library/cmp/componenteditorwidget.ui
+  library/cmp/componentmetadatadock.cpp
+  library/cmp/componentmetadatadock.h
+  library/cmp/componentmetadatadock.ui
   library/cmp/componentpinsignalmapmodel.cpp
   library/cmp/componentpinsignalmapmodel.h
   library/cmp/componentsignallisteditorwidget.cpp

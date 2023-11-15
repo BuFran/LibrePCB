@@ -45,6 +45,7 @@ class Workspace;
 
 namespace editor {
 
+class ComponentMetadataDock;
 class DeviceMetadataDock;
 class ExclusiveActionGroup;
 class IF_DockProvider;
@@ -290,6 +291,8 @@ public:
       getDockPackageMetadata() noexcept = 0;
   virtual std::shared_ptr<DeviceMetadataDock>
       getDockDeviceMetadata() noexcept = 0;
+  virtual std::shared_ptr<ComponentMetadataDock>
+      getDockComponentMetadata() noexcept = 0;
 };
 
 /*******************************************************************************

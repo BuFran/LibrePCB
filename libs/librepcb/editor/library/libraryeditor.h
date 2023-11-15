@@ -98,6 +98,8 @@ public:
   std::shared_ptr<PackageMetadataDock> getDockPackageMetadata() noexcept
       override;
   std::shared_ptr<DeviceMetadataDock> getDockDeviceMetadata() noexcept override;
+  std::shared_ptr<ComponentMetadataDock> getDockComponentMetadata() noexcept
+      override;
 
   /**
    * @brief Close the library editor (this will destroy this object!)
@@ -274,6 +276,7 @@ private:  // Data
   std::shared_ptr<SymbolMetadataDock> mDockSymbolMetadata;
   std::shared_ptr<PackageMetadataDock> mDockPackageMetadata;
   std::shared_ptr<DeviceMetadataDock> mDockDeviceMetadata;
+  std::shared_ptr<ComponentMetadataDock> mDockComponentMetadata;
 };
 
 /*******************************************************************************

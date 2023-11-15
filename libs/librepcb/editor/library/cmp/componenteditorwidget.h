@@ -72,6 +72,13 @@ public:
   // Getters
   QSet<Feature> getAvailableFeatures() const noexcept override;
 
+  // Setters
+  void connectEditor(UndoStackActionGroup& undoStackActionGroup,
+                     ExclusiveActionGroup& toolsActionGroup,
+                     QToolBar& commandToolBar,
+                     StatusBar& statusBar) noexcept override;
+  void disconnectEditor() noexcept override;
+
   // Operator Overloadings
   ComponentEditorWidget& operator=(const ComponentEditorWidget& rhs) = delete;
 
@@ -97,7 +104,6 @@ private:  // Methods
 
 private:  // Data
   QScopedPointer<Ui::ComponentEditorWidget> mUi;
-  QScopedPointer<CategoryListEditorWidget> mCategoriesEditorWidget;
   std::shared_ptr<Component> mComponent;
 
   // broken interface detection
