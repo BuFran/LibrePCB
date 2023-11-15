@@ -37,6 +37,7 @@
 #include "../cmd/cmdfootprintpadedit.h"
 #include "../cmd/cmdpackageedit.h"
 #include "fsm/packageeditorfsm.h"
+#include "packagemetadatadock.h"
 #include "ui_packageeditorwidget.h"
 
 #include <librepcb/core/application.h>
@@ -71,15 +72,7 @@ PackageEditorWidget::PackageEditorWidget(const Context& context,
     mGraphicsScene(new GraphicsScene()),
     mOpenGlSceneBuildScheduled(false) {
   mUi->setupUi(this);
-  mUi->lstMessages->setHandler(this);
-  mUi->lstMessages->setReadOnly(mContext.readOnly);
-  mUi->edtName->setReadOnly(mContext.readOnly);
-  mUi->edtDescription->setReadOnly(mContext.readOnly);
-  mUi->edtKeywords->setReadOnly(mContext.readOnly);
-  mUi->edtAuthor->setReadOnly(mContext.readOnly);
-  mUi->edtVersion->setReadOnly(mContext.readOnly);
-  mUi->cbxDeprecated->setCheckable(!mContext.readOnly);
-  mUi->cbxAssemblyType->setEnabled(!mContext.readOnly);
+
   mUi->padListEditorWidget->setReadOnly(mContext.readOnly);
   mUi->padListEditorWidget->setFrameStyle(QFrame::NoFrame);
   mUi->footprintEditorWidget->setReadOnly(mContext.readOnly);
@@ -130,39 +123,9 @@ PackageEditorWidget::PackageEditorWidget(const Context& context,
           &PackageEditorWidget::updateOpenGlScene);
   openGlBuilderTimer->start(100);
 
-  // List mount types.
-  mUi->cbxAssemblyType->addItem(
-      tr("THT (all leads)"), QVariant::fromValue(Package::AssemblyType::Tht));
-  mUi->cbxAssemblyType->addItem(
-      tr("SMT (all leads)"), QVariant::fromValue(Package::AssemblyType::Smt));
-  mUi->cbxAssemblyType->addItem(
-      tr("THT+SMT (mixed leads)"),
-      QVariant::fromValue(Package::AssemblyType::Mixed));
-  mUi->cbxAssemblyType->addItem(
-      tr("Other (included in BOM/PnP)"),
-      QVariant::fromValue(Package::AssemblyType::Other));
-  mUi->cbxAssemblyType->addItem(
-      tr("None (excluded from BOM/PnP)"),
-      QVariant::fromValue(Package::AssemblyType::None));
-  mUi->cbxAssemblyType->addItem(
-      tr("Auto-detect (not recommended)"),
-      QVariant::fromValue(Package::AssemblyType::Auto));
-
-  // Insert category list editor widget.
-  mCategoriesEditorWidget.reset(new CategoryListEditorWidget(
-      mContext.workspace, CategoryListEditorWidget::Categories::Package, this));
-  mCategoriesEditorWidget->setReadOnly(mContext.readOnly);
-  mCategoriesEditorWidget->setRequiresMinimumOneEntry(true);
-  int row;
-  QFormLayout::ItemRole role;
-  mUi->formLayout->getWidgetPosition(mUi->lblCategories, &row, &role);
-  mUi->formLayout->setWidget(row, QFormLayout::FieldRole,
-                             mCategoriesEditorWidget.data());
-
   // Load element.
   mPackage = Package::open(std::unique_ptr<TransactionalDirectory>(
       new TransactionalDirectory(mFileSystem)));  // can throw
-  updateMetadata();
 
   // Setup pad list editor widget.
   mUi->padListEditorWidget->setReferences(&mPackage->getPads(),
@@ -189,26 +152,6 @@ PackageEditorWidget::PackageEditorWidget(const Context& context,
   // Reload metadata on undo stack state changes.
   connect(mUndoStack.data(), &UndoStack::stateModified, this,
           &PackageEditorWidget::updateMetadata);
-
-  // Handle changes of metadata.
-  connect(mUi->edtName, &QLineEdit::editingFinished, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(mUi->edtDescription, &PlainTextEdit::editingFinished, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(mUi->edtKeywords, &QLineEdit::editingFinished, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(mUi->edtAuthor, &QLineEdit::editingFinished, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(mUi->edtVersion, &QLineEdit::editingFinished, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(mUi->cbxDeprecated, &QCheckBox::clicked, this,
-          &PackageEditorWidget::commitMetadata);
-  connect(
-      mUi->cbxAssemblyType,
-      static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-      this, &PackageEditorWidget::commitMetadata);
-  connect(mCategoriesEditorWidget.data(), &CategoryListEditorWidget::edited,
-          this, &PackageEditorWidget::commitMetadata);
 
   // Load finite state machine (FSM).
   PackageEditorFsm::Context fsmContext{mContext,
@@ -301,6 +244,14 @@ void PackageEditorWidget::connectEditor(
   mStatusBar->setLengthUnit(mLengthUnit);
   connect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
           mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  auto dock = mContext.dockProvider.getDockPackageMetadata();
+  dock->connectItem(mPackage, &mContext, this);
+
+  updateMetadata();
+  undoStackStateModified();
+  connect(dock.get(), &PackageMetadataDock::modified, this,
+          &PackageEditorWidget::commitMetadata);
 }
 
 void PackageEditorWidget::disconnectEditor() noexcept {
@@ -310,6 +261,12 @@ void PackageEditorWidget::disconnectEditor() noexcept {
   mStatusBar->setField(StatusBar::AbsolutePosition, false);
   disconnect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
              mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  auto dock = mContext.dockProvider.getDockPackageMetadata();
+  disconnect(dock.get(), &PackageMetadataDock::modified, this,
+             &PackageEditorWidget::commitMetadata);
+
+  dock->disconnectItem();
 
   EditorWidgetBase::disconnectEditor();
 }
@@ -465,44 +422,14 @@ bool PackageEditorWidget::decreaseGridInterval() noexcept {
 
 void PackageEditorWidget::updateMetadata() noexcept {
   setWindowTitle(*mPackage->getNames().getDefaultValue());
-  mUi->edtName->setText(*mPackage->getNames().getDefaultValue());
-  mUi->edtDescription->setPlainText(
-      mPackage->getDescriptions().getDefaultValue());
-  mUi->edtKeywords->setText(mPackage->getKeywords().getDefaultValue());
-  mUi->edtAuthor->setText(mPackage->getAuthor());
-  mUi->edtVersion->setText(mPackage->getVersion().toStr());
-  mUi->cbxDeprecated->setChecked(mPackage->isDeprecated());
-  mUi->cbxAssemblyType->setCurrentIndex(mUi->cbxAssemblyType->findData(
-      QVariant::fromValue(mPackage->getAssemblyType(false))));
-  mUi->lstMessages->setApprovals(mPackage->getMessageApprovals());
-  mCategoriesEditorWidget->setUuids(mPackage->getCategories());
+  mContext.dockProvider.getDockPackageMetadata()->updateDisplay();
 }
 
 QString PackageEditorWidget::commitMetadata() noexcept {
   try {
-    QScopedPointer<CmdPackageEdit> cmd(new CmdPackageEdit(*mPackage));
-    try {
-      // throws on invalid name
-      cmd->setName("", ElementName(mUi->edtName->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDescription("", mUi->edtDescription->toPlainText().trimmed());
-    cmd->setKeywords("", mUi->edtKeywords->text().trimmed());
-    try {
-      // throws on invalid version
-      cmd->setVersion(Version::fromString(mUi->edtVersion->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setAuthor(mUi->edtAuthor->text().trimmed());
-    cmd->setDeprecated(mUi->cbxDeprecated->isChecked());
-    const QVariant asblyType = mUi->cbxAssemblyType->currentData();
-    if (asblyType.isValid() && asblyType.canConvert<Package::AssemblyType>()) {
-      cmd->setAssemblyType(asblyType.value<Package::AssemblyType>());
-    }
-    cmd->setCategories(mCategoriesEditorWidget->getUuids());
-
     // Commit all changes.
-    mUndoStack->execCmd(cmd.take());  // can throw
+    mUndoStack->execCmd(mContext.dockProvider.getDockPackageMetadata()
+                            ->commitChanges());  // can throw
 
     // Reload metadata into widgets to discard invalid input.
     updateMetadata();
@@ -562,7 +489,9 @@ bool PackageEditorWidget::graphicsViewEventHandler(QEvent* event) noexcept {
       Q_ASSERT(e);
       return mFsm->processKeyReleased(*e);
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 }
 
@@ -721,7 +650,7 @@ bool PackageEditorWidget::runChecks(RuleCheckMessageList& msgs) const {
     return false;
   }
   msgs = mPackage->runChecks();  // can throw
-  mUi->lstMessages->setMessages(msgs);
+  mContext.dockProvider.getDockPackageMetadata()->setMessages(msgs);
   return true;
 }
 
@@ -743,21 +672,20 @@ void PackageEditorWidget::fixMsg(const MsgSuspiciousAssemblyType& msg) {
 
 template <>
 void PackageEditorWidget::fixMsg(const MsgNameNotTitleCase& msg) {
-  mUi->edtName->setText(*msg.getFixedName());
-  commitMetadata();
+  mContext.dockProvider.getDockPackageMetadata()->setName(*msg.getFixedName());
 }
 
 template <>
 void PackageEditorWidget::fixMsg(const MsgMissingAuthor& msg) {
-  Q_UNUSED(msg);
-  mUi->edtAuthor->setText(getWorkspaceSettingsUserName());
-  commitMetadata();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockPackageMetadata()->setAuthor(
+      getWorkspaceSettingsUserName());
 }
 
 template <>
 void PackageEditorWidget::fixMsg(const MsgMissingCategories& msg) {
-  Q_UNUSED(msg);
-  mCategoriesEditorWidget->openAddCategoryDialog();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockPackageMetadata()->addCategory();
 }
 
 template <>

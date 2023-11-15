@@ -328,6 +328,9 @@ add_library(
   library/pkg/packageeditorwidget.cpp
   library/pkg/packageeditorwidget.h
   library/pkg/packageeditorwidget.ui
+  library/pkg/packagemetadatadock.cpp
+  library/pkg/packagemetadatadock.h
+  library/pkg/packagemetadatadock.ui
   library/pkg/packagemodellisteditorwidget.cpp
   library/pkg/packagemodellisteditorwidget.h
   library/pkg/packagemodellistmodel.cpp

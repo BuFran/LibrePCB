@@ -95,6 +95,8 @@ public:
   }
 
   std::shared_ptr<SymbolMetadataDock> getDockSymbolMetadata() noexcept override;
+  std::shared_ptr<PackageMetadataDock> getDockPackageMetadata() noexcept
+      override;
 
   /**
    * @brief Close the library editor (this will destroy this object!)
@@ -269,6 +271,7 @@ private:  // Data
   QScopedPointer<QToolBar> mToolBarTools;
 
   std::shared_ptr<SymbolMetadataDock> mDockSymbolMetadata;
+  std::shared_ptr<PackageMetadataDock> mDockPackageMetadata;
 };
 
 /*******************************************************************************

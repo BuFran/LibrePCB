@@ -36,6 +36,7 @@
 #include "eaglelibraryimportwizard/eaglelibraryimportwizard.h"
 #include "lib/libraryoverviewwidget.h"
 #include "pkg/packageeditorwidget.h"
+#include "pkg/packagemetadatadock.h"
 #include "sym/symboleditorwidget.h"
 #include "sym/symbolmetadatadock.h"
 #include "ui_libraryeditor.h"
@@ -955,11 +956,15 @@ void LibraryEditor::createMenus() noexcept {
 
 void LibraryEditor::createDocks() noexcept {
   mDockSymbolMetadata.reset(new SymbolMetadataDock(mWorkspace));
+  mDockPackageMetadata.reset(new PackageMetadataDock(mWorkspace));
 
   addDockWidget(Qt::RightDockWidgetArea, mDockSymbolMetadata.get(),
                 Qt::Vertical);
+  addDockWidget(Qt::RightDockWidgetArea, mDockPackageMetadata.get(),
+                Qt::Vertical);
 
   mDockSymbolMetadata->hide();
+  mDockPackageMetadata->hide();
 }
 
 EditorWidgetBase::Context LibraryEditor::createContext(
@@ -1172,6 +1177,11 @@ void LibraryEditor::addLayer(const QString& name) noexcept {
 std::shared_ptr<SymbolMetadataDock>
     LibraryEditor::getDockSymbolMetadata() noexcept {
   return mDockSymbolMetadata;
+}
+
+std::shared_ptr<PackageMetadataDock>
+    LibraryEditor::getDockPackageMetadata() noexcept {
+  return mDockPackageMetadata;
 }
 
 /*******************************************************************************

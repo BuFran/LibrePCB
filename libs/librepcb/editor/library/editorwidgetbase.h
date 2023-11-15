@@ -48,6 +48,7 @@ namespace editor {
 class ExclusiveActionGroup;
 class IF_DockProvider;
 class IF_GraphicsLayerProvider;
+class PackageMetadataDock;
 class StatusBar;
 class SymbolMetadataDock;
 class ToolBarProxy;
@@ -284,6 +285,8 @@ public:
   virtual ~IF_DockProvider() noexcept = default;
   virtual std::shared_ptr<SymbolMetadataDock>
       getDockSymbolMetadata() noexcept = 0;
+  virtual std::shared_ptr<PackageMetadataDock>
+      getDockPackageMetadata() noexcept = 0;
 };
 
 /*******************************************************************************

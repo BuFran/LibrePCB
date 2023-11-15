@@ -146,12 +146,11 @@ private:  // Methods
 private:  // Data
   QScopedPointer<Ui::PackageEditorWidget> mUi;
   QScopedPointer<OpenGlView> mOpenGlView;
-  QScopedPointer<CategoryListEditorWidget> mCategoriesEditorWidget;
   QScopedPointer<GraphicsScene> mGraphicsScene;
   QScopedPointer<OpenGlSceneBuilder> mOpenGlSceneBuilder;
   bool mOpenGlSceneBuildScheduled;
   LengthUnit mLengthUnit;
-  std::unique_ptr<Package> mPackage;
+  std::shared_ptr<Package> mPackage;
   std::shared_ptr<Footprint> mCurrentFootprint;
   std::shared_ptr<PackageModel> mCurrentModel;
 
