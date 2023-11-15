@@ -32,6 +32,7 @@
 #include "../pkg/footprintgraphicsitem.h"
 #include "../pkg/packagechooserdialog.h"
 #include "../sym/symbolgraphicsitem.h"
+#include "devicemetadatadock.h"
 #include "ui_deviceeditorwidget.h"
 
 #include <librepcb/core/application.h>
@@ -63,14 +64,7 @@ DeviceEditorWidget::DeviceEditorWidget(const Context& context,
                                        const FilePath& fp, QWidget* parent)
   : EditorWidgetBase(context, fp, parent), mUi(new Ui::DeviceEditorWidget) {
   mUi->setupUi(this);
-  mUi->lstMessages->setHandler(this);
-  mUi->lstMessages->setReadOnly(mContext.readOnly);
-  mUi->edtName->setReadOnly(mContext.readOnly);
-  mUi->edtDescription->setReadOnly(mContext.readOnly);
-  mUi->edtKeywords->setReadOnly(mContext.readOnly);
-  mUi->edtAuthor->setReadOnly(mContext.readOnly);
-  mUi->edtVersion->setReadOnly(mContext.readOnly);
-  mUi->cbxDeprecated->setCheckable(!mContext.readOnly);
+
   mUi->btnChoosePackage->setHidden(mContext.readOnly);
   mUi->btnChooseComponent->setHidden(mContext.readOnly);
   mUi->padSignalMapEditorWidget->setReadOnly(mContext.readOnly);
@@ -100,18 +94,6 @@ DeviceEditorWidget::DeviceEditorWidget(const Context& context,
   mUi->viewPackage->setScene(mPackageGraphicsScene.data());
   mGraphicsLayerProvider.reset(new DefaultGraphicsLayerProvider(theme));
 
-  // Insert category list editor widget.
-  mCategoriesEditorWidget.reset(new CategoryListEditorWidget(
-      mContext.workspace, CategoryListEditorWidget::Categories::Component,
-      this));
-  mCategoriesEditorWidget->setReadOnly(mContext.readOnly);
-  mCategoriesEditorWidget->setRequiresMinimumOneEntry(true);
-  int row;
-  QFormLayout::ItemRole role;
-  mUi->formLayout->getWidgetPosition(mUi->lblCategories, &row, &role);
-  mUi->formLayout->setWidget(row, QFormLayout::FieldRole,
-                             mCategoriesEditorWidget.data());
-
   // Load element.
   mDevice = Device::open(std::unique_ptr<TransactionalDirectory>(
       new TransactionalDirectory(mFileSystem)));  // can throw
@@ -119,7 +101,6 @@ DeviceEditorWidget::DeviceEditorWidget(const Context& context,
                                                &mDevice->getPadSignalMap());
   updateDeviceComponentUuid(mDevice->getComponentUuid());
   updateDevicePackageUuid(mDevice->getPackageUuid());
-  updateMetadata();
 
   // Load parts editor.
   mUi->partsEditorWidget->setReferences(mUndoStack.data(),
@@ -145,22 +126,6 @@ DeviceEditorWidget::DeviceEditorWidget(const Context& context,
           &DeviceEditorWidget::btnChooseComponentClicked);
   connect(mUi->btnChoosePackage, &QToolButton::clicked, this,
           &DeviceEditorWidget::btnChoosePackageClicked);
-
-  // Handle changes of metadata.
-  connect(mUi->edtName, &QLineEdit::editingFinished, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mUi->edtDescription, &PlainTextEdit::editingFinished, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mUi->edtKeywords, &QLineEdit::editingFinished, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mUi->edtAuthor, &QLineEdit::editingFinished, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mUi->edtVersion, &QLineEdit::editingFinished, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mUi->cbxDeprecated, &QCheckBox::clicked, this,
-          &DeviceEditorWidget::commitMetadata);
-  connect(mCategoriesEditorWidget.data(), &CategoryListEditorWidget::edited,
-          this, &DeviceEditorWidget::commitMetadata);
 }
 
 DeviceEditorWidget::~DeviceEditorWidget() noexcept {
@@ -173,11 +138,40 @@ DeviceEditorWidget::~DeviceEditorWidget() noexcept {
  *  Getters
  ******************************************************************************/
 
-QSet<EditorWidgetBase::Feature> DeviceEditorWidget::getAvailableFeatures() const
-    noexcept {
+QSet<EditorWidgetBase::Feature> DeviceEditorWidget::getAvailableFeatures()
+    const noexcept {
   return {
       EditorWidgetBase::Feature::Close,
   };
+}
+
+/*******************************************************************************
+ *  Setters
+ ******************************************************************************/
+
+void DeviceEditorWidget::connectEditor(
+    UndoStackActionGroup& undoStackActionGroup,
+    ExclusiveActionGroup& toolsActionGroup, QToolBar& commandToolBar,
+    StatusBar& statusBar) noexcept {
+  EditorWidgetBase::connectEditor(undoStackActionGroup, toolsActionGroup,
+                                  commandToolBar, statusBar);
+  auto dock = mContext.dockProvider.getDockDeviceMetadata();
+  dock->connectItem(mDevice, &mContext, this);
+
+  updateMetadata();
+  undoStackStateModified();
+  connect(dock.get(), &DeviceMetadataDock::modified, this,
+          &DeviceEditorWidget::commitMetadata);
+}
+
+void DeviceEditorWidget::disconnectEditor() noexcept {
+  auto dock = mContext.dockProvider.getDockDeviceMetadata();
+  disconnect(dock.get(), &DeviceMetadataDock::modified, this,
+             &DeviceEditorWidget::commitMetadata);
+
+  dock->disconnectItem();
+
+  EditorWidgetBase::disconnectEditor();
 }
 
 /*******************************************************************************
@@ -232,39 +226,14 @@ bool DeviceEditorWidget::zoomAll() noexcept {
 
 void DeviceEditorWidget::updateMetadata() noexcept {
   setWindowTitle(*mDevice->getNames().getDefaultValue());
-  mUi->edtName->setText(*mDevice->getNames().getDefaultValue());
-  mUi->edtDescription->setPlainText(
-      mDevice->getDescriptions().getDefaultValue());
-  mUi->edtKeywords->setText(mDevice->getKeywords().getDefaultValue());
-  mUi->edtAuthor->setText(mDevice->getAuthor());
-  mUi->edtVersion->setText(mDevice->getVersion().toStr());
-  mUi->cbxDeprecated->setChecked(mDevice->isDeprecated());
-  mUi->lstMessages->setApprovals(mDevice->getMessageApprovals());
-  mCategoriesEditorWidget->setUuids(mDevice->getCategories());
+  mContext.dockProvider.getDockDeviceMetadata()->updateDisplay();
 }
 
 QString DeviceEditorWidget::commitMetadata() noexcept {
   try {
-    QScopedPointer<CmdLibraryElementEdit> cmd(
-        new CmdLibraryElementEdit(*mDevice, tr("Edit device metadata")));
-    try {
-      // throws on invalid name
-      cmd->setName("", ElementName(mUi->edtName->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDescription("", mUi->edtDescription->toPlainText().trimmed());
-    cmd->setKeywords("", mUi->edtKeywords->text().trimmed());
-    try {
-      // throws on invalid version
-      cmd->setVersion(Version::fromString(mUi->edtVersion->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setAuthor(mUi->edtAuthor->text().trimmed());
-    cmd->setDeprecated(mUi->cbxDeprecated->isChecked());
-    cmd->setCategories(mCategoriesEditorWidget->getUuids());
-
     // Commit all changes.
-    mUndoStack->execCmd(cmd.take());  // can throw
+    mUndoStack->execCmd(mContext.dockProvider.getDockDeviceMetadata()
+                            ->commitChanges());  // can throw
 
     // Reload metadata into widgets to discard invalid input.
     updateMetadata();
@@ -485,27 +454,27 @@ bool DeviceEditorWidget::isInterfaceBroken() const noexcept {
 
 bool DeviceEditorWidget::runChecks(RuleCheckMessageList& msgs) const {
   msgs = mDevice->runChecks();  // can throw
-  mUi->lstMessages->setMessages(msgs);
+  mContext.dockProvider.getDockDeviceMetadata()->setMessages(msgs);
   return true;
 }
 
 template <>
 void DeviceEditorWidget::fixMsg(const MsgNameNotTitleCase& msg) {
-  mUi->edtName->setText(*msg.getFixedName());
+  mContext.dockProvider.getDockDeviceMetadata()->setName(*msg.getFixedName());
   commitMetadata();
 }
 
 template <>
 void DeviceEditorWidget::fixMsg(const MsgMissingAuthor& msg) {
-  Q_UNUSED(msg);
-  mUi->edtAuthor->setText(getWorkspaceSettingsUserName());
-  commitMetadata();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockDeviceMetadata()->setAuthor(
+      getWorkspaceSettingsUserName());
 }
 
 template <>
 void DeviceEditorWidget::fixMsg(const MsgMissingCategories& msg) {
-  Q_UNUSED(msg);
-  mCategoriesEditorWidget->openAddCategoryDialog();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockDeviceMetadata()->addCategory();
 }
 
 template <typename MessageType>

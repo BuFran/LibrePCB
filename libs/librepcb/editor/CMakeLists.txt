@@ -200,6 +200,9 @@ add_library(
   library/dev/deviceeditorwidget.cpp
   library/dev/deviceeditorwidget.h
   library/dev/deviceeditorwidget.ui
+  library/dev/devicemetadatadock.cpp
+  library/dev/devicemetadatadock.h
+  library/dev/devicemetadatadock.ui
   library/dev/devicepadsignalmapmodel.cpp
   library/dev/devicepadsignalmapmodel.h
   library/dev/padsignalmapeditorwidget.cpp

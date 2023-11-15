@@ -33,6 +33,7 @@
 #include "cat/packagecategoryeditorwidget.h"
 #include "cmp/componenteditorwidget.h"
 #include "dev/deviceeditorwidget.h"
+#include "dev/devicemetadatadock.h"
 #include "eaglelibraryimportwizard/eaglelibraryimportwizard.h"
 #include "lib/libraryoverviewwidget.h"
 #include "pkg/packageeditorwidget.h"
@@ -957,14 +958,18 @@ void LibraryEditor::createMenus() noexcept {
 void LibraryEditor::createDocks() noexcept {
   mDockSymbolMetadata.reset(new SymbolMetadataDock(mWorkspace));
   mDockPackageMetadata.reset(new PackageMetadataDock(mWorkspace));
+  mDockDeviceMetadata.reset(new DeviceMetadataDock(mWorkspace));
 
   addDockWidget(Qt::RightDockWidgetArea, mDockSymbolMetadata.get(),
                 Qt::Vertical);
   addDockWidget(Qt::RightDockWidgetArea, mDockPackageMetadata.get(),
                 Qt::Vertical);
+  addDockWidget(Qt::RightDockWidgetArea, mDockDeviceMetadata.get(),
+                Qt::Vertical);
 
   mDockSymbolMetadata->hide();
   mDockPackageMetadata->hide();
+  mDockDeviceMetadata->hide();
 }
 
 EditorWidgetBase::Context LibraryEditor::createContext(
@@ -1182,6 +1187,11 @@ std::shared_ptr<SymbolMetadataDock>
 std::shared_ptr<PackageMetadataDock>
     LibraryEditor::getDockPackageMetadata() noexcept {
   return mDockPackageMetadata;
+}
+
+std::shared_ptr<DeviceMetadataDock>
+    LibraryEditor::getDockDeviceMetadata() noexcept {
+  return mDockDeviceMetadata;
 }
 
 /*******************************************************************************

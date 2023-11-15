@@ -75,6 +75,13 @@ public:
   // Getters
   QSet<Feature> getAvailableFeatures() const noexcept override;
 
+  // Setters
+  void connectEditor(UndoStackActionGroup& undoStackActionGroup,
+                     ExclusiveActionGroup& toolsActionGroup,
+                     QToolBar& commandToolBar,
+                     StatusBar& statusBar) noexcept override;
+  void disconnectEditor() noexcept override;
+
   // Operator Overloadings
   DeviceEditorWidget& operator=(const DeviceEditorWidget& rhs) = delete;
 
@@ -108,8 +115,7 @@ private:  // Methods
 
 private:  // Data
   QScopedPointer<Ui::DeviceEditorWidget> mUi;
-  QScopedPointer<CategoryListEditorWidget> mCategoriesEditorWidget;
-  std::unique_ptr<Device> mDevice;
+  std::shared_ptr<Device> mDevice;
   QScopedPointer<DefaultGraphicsLayerProvider> mGraphicsLayerProvider;
 
   // component

@@ -45,6 +45,7 @@ class Workspace;
 
 namespace editor {
 
+class DeviceMetadataDock;
 class ExclusiveActionGroup;
 class IF_DockProvider;
 class IF_GraphicsLayerProvider;
@@ -287,6 +288,8 @@ public:
       getDockSymbolMetadata() noexcept = 0;
   virtual std::shared_ptr<PackageMetadataDock>
       getDockPackageMetadata() noexcept = 0;
+  virtual std::shared_ptr<DeviceMetadataDock>
+      getDockDeviceMetadata() noexcept = 0;
 };
 
 /*******************************************************************************
