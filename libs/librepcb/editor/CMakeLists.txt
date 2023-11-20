@@ -114,6 +114,9 @@ add_library(
   library/cat/componentcategoryeditorwidget.cpp
   library/cat/componentcategoryeditorwidget.h
   library/cat/componentcategoryeditorwidget.ui
+  library/cat/componentcategorymetadatadock.cpp
+  library/cat/componentcategorymetadatadock.h
+  library/cat/componentcategorymetadatadock.ui
   library/cat/packagecategoryeditorwidget.cpp
   library/cat/packagecategoryeditorwidget.h
   library/cat/packagecategoryeditorwidget.ui

@@ -22,10 +22,7 @@
  ******************************************************************************/
 #include "componentcategoryeditorwidget.h"
 
-#include "../cmd/cmdlibrarybaseelementedit.h"
-#include "../cmd/cmdlibrarycategoryedit.h"
-#include "categorychooserdialog.h"
-#include "categorytreelabeltextbuilder.h"
+#include "componentcategorymetadatadock.h"
 #include "ui_componentcategoryeditorwidget.h"
 
 #include <librepcb/core/library/cat/componentcategory.h>
@@ -50,44 +47,16 @@ ComponentCategoryEditorWidget::ComponentCategoryEditorWidget(
   : EditorWidgetBase(context, fp, parent),
     mUi(new Ui::ComponentCategoryEditorWidget) {
   mUi->setupUi(this);
-  mUi->lstMessages->setHandler(this);
-  mUi->lstMessages->setReadOnly(mContext.readOnly);
-  mUi->edtName->setReadOnly(mContext.readOnly);
-  mUi->edtDescription->setReadOnly(mContext.readOnly);
-  mUi->edtKeywords->setReadOnly(mContext.readOnly);
-  mUi->edtAuthor->setReadOnly(mContext.readOnly);
-  mUi->edtVersion->setReadOnly(mContext.readOnly);
-  mUi->cbxDeprecated->setCheckable(!mContext.readOnly);
-  mUi->btnChooseParentCategory->setEnabled(!mContext.readOnly);
-  mUi->btnResetParentCategory->setEnabled(!mContext.readOnly);
+
   setWindowIcon(QIcon(":/img/places/folder.png"));
-  connect(mUi->btnChooseParentCategory, &QToolButton::clicked, this,
-          &ComponentCategoryEditorWidget::btnChooseParentCategoryClicked);
-  connect(mUi->btnResetParentCategory, &QToolButton::clicked, this,
-          &ComponentCategoryEditorWidget::btnResetParentCategoryClicked);
 
   // Load element.
   mCategory = ComponentCategory::open(std::unique_ptr<TransactionalDirectory>(
       new TransactionalDirectory(mFileSystem)));  // can throw
-  updateMetadata();
 
   // Reload metadata on undo stack state changes.
   connect(mUndoStack.data(), &UndoStack::stateModified, this,
           &ComponentCategoryEditorWidget::updateMetadata);
-
-  // Handle changes of metadata.
-  connect(mUi->edtName, &QLineEdit::editingFinished, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
-  connect(mUi->edtDescription, &PlainTextEdit::editingFinished, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
-  connect(mUi->edtKeywords, &QLineEdit::editingFinished, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
-  connect(mUi->edtAuthor, &QLineEdit::editingFinished, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
-  connect(mUi->edtVersion, &QLineEdit::editingFinished, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
-  connect(mUi->cbxDeprecated, &QCheckBox::clicked, this,
-          &ComponentCategoryEditorWidget::commitMetadata);
 }
 
 ComponentCategoryEditorWidget::~ComponentCategoryEditorWidget() noexcept {
@@ -102,6 +71,37 @@ QSet<EditorWidgetBase::Feature>
   return {
       EditorWidgetBase::Feature::Close,
   };
+}
+
+/*******************************************************************************
+ *  Setters
+ ******************************************************************************/
+
+void ComponentCategoryEditorWidget::connectEditor(
+    UndoStackActionGroup& undoStackActionGroup,
+    ExclusiveActionGroup& toolsActionGroup, QToolBar& commandToolBar,
+    StatusBar& statusBar) noexcept {
+  EditorWidgetBase::connectEditor(undoStackActionGroup, toolsActionGroup,
+                                  commandToolBar, statusBar);
+
+  auto dock = mContext.dockProvider.getDockComponentCategoryMetadata();
+  dock->connectItem(mCategory, &mContext, this);
+
+  updateMetadata();
+  undoStackStateModified();
+  connect(dock.get(), &ComponentCategoryMetadataDock::modified, this,
+          &ComponentCategoryEditorWidget::commitMetadata);
+}
+
+void ComponentCategoryEditorWidget::disconnectEditor() noexcept {
+
+  auto dock = mContext.dockProvider.getDockComponentCategoryMetadata();
+  disconnect(dock.get(), &ComponentCategoryMetadataDock::modified, this,
+             &ComponentCategoryEditorWidget::commitMetadata);
+
+  dock->disconnectItem();
+
+  EditorWidgetBase::disconnectEditor();
 }
 
 /*******************************************************************************
@@ -137,40 +137,15 @@ bool ComponentCategoryEditorWidget::save() noexcept {
 
 void ComponentCategoryEditorWidget::updateMetadata() noexcept {
   setWindowTitle(*mCategory->getNames().getDefaultValue());
-  mUi->edtName->setText(*mCategory->getNames().getDefaultValue());
-  mUi->edtDescription->setPlainText(
-      mCategory->getDescriptions().getDefaultValue());
-  mUi->edtKeywords->setText(mCategory->getKeywords().getDefaultValue());
-  mUi->edtAuthor->setText(mCategory->getAuthor());
-  mUi->edtVersion->setText(mCategory->getVersion().toStr());
-  mUi->cbxDeprecated->setChecked(mCategory->isDeprecated());
-  mUi->lstMessages->setApprovals(mCategory->getMessageApprovals());
-  mParentUuid = mCategory->getParentUuid();
-  updateCategoryLabel();
+  mContext.dockProvider.getDockComponentCategoryMetadata()->updateDisplay();
 }
 
 QString ComponentCategoryEditorWidget::commitMetadata() noexcept {
   try {
-    QScopedPointer<CmdLibraryCategoryEdit> cmd(
-        new CmdLibraryCategoryEdit(*mCategory));
-    try {
-      // throws on invalid name
-      cmd->setName("", ElementName(mUi->edtName->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setDescription("", mUi->edtDescription->toPlainText().trimmed());
-    cmd->setKeywords("", mUi->edtKeywords->text().trimmed());
-    try {
-      // throws on invalid version
-      cmd->setVersion(Version::fromString(mUi->edtVersion->text().trimmed()));
-    } catch (const Exception& e) {
-    }
-    cmd->setAuthor(mUi->edtAuthor->text().trimmed());
-    cmd->setDeprecated(mUi->cbxDeprecated->isChecked());
-    cmd->setParentUuid(mParentUuid);
-
     // Commit all changes.
-    mUndoStack->execCmd(cmd.take());  // can throw
+    mUndoStack->execCmd(
+        mContext.dockProvider.getDockComponentCategoryMetadata()
+            ->commitChanges());  // can throw
 
     // Reload metadata into widgets to discard invalid input.
     updateMetadata();
@@ -183,21 +158,21 @@ QString ComponentCategoryEditorWidget::commitMetadata() noexcept {
 bool ComponentCategoryEditorWidget::runChecks(
     RuleCheckMessageList& msgs) const {
   msgs = mCategory->runChecks();  // can throw
-  mUi->lstMessages->setMessages(msgs);
+  mContext.dockProvider.getDockComponentCategoryMetadata()->setMessages(msgs);
   return true;
 }
 
 template <>
 void ComponentCategoryEditorWidget::fixMsg(const MsgNameNotTitleCase& msg) {
-  mUi->edtName->setText(*msg.getFixedName());
-  commitMetadata();
+  mContext.dockProvider.getDockComponentCategoryMetadata()->setName(
+      *msg.getFixedName());
 }
 
 template <>
 void ComponentCategoryEditorWidget::fixMsg(const MsgMissingAuthor& msg) {
-  Q_UNUSED(msg);
-  mUi->edtAuthor->setText(getWorkspaceSettingsUserName());
-  commitMetadata();
+  Q_UNUSED(msg)
+  mContext.dockProvider.getDockComponentCategoryMetadata()->setAuthor(
+      getWorkspaceSettingsUserName());
 }
 
 template <typename MessageType>
@@ -223,27 +198,6 @@ void ComponentCategoryEditorWidget::ruleCheckApproveRequested(
     std::shared_ptr<const RuleCheckMessage> msg, bool approve) noexcept {
   setMessageApproved(*mCategory, msg, approve);
   updateMetadata();
-}
-
-void ComponentCategoryEditorWidget::btnChooseParentCategoryClicked() noexcept {
-  CategoryChooserDialog dialog(mContext.workspace,
-                               CategoryChooserDialog::Filter::CmpCat);
-  if (dialog.exec()) {
-    mParentUuid = dialog.getSelectedCategoryUuid();
-    commitMetadata();
-  }
-}
-
-void ComponentCategoryEditorWidget::btnResetParentCategoryClicked() noexcept {
-  mParentUuid = tl::nullopt;
-  commitMetadata();
-}
-
-void ComponentCategoryEditorWidget::updateCategoryLabel() noexcept {
-  const WorkspaceLibraryDb& db = mContext.workspace.getLibraryDb();
-  ComponentCategoryTreeLabelTextBuilder textBuilder(
-      db, getLibLocaleOrder(), true, *mUi->lblParentCategories);
-  textBuilder.updateText(mParentUuid);
 }
 
 /*******************************************************************************

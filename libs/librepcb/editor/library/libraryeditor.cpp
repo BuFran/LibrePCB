@@ -30,6 +30,7 @@
 #include "../utils/undostackactiongroup.h"
 #include "../widgets/searchtoolbar.h"
 #include "cat/componentcategoryeditorwidget.h"
+#include "cat/componentcategorymetadatadock.h"
 #include "cat/packagecategoryeditorwidget.h"
 #include "cmp/componenteditorwidget.h"
 #include "cmp/componentmetadatadock.h"
@@ -961,6 +962,8 @@ void LibraryEditor::createDocks() noexcept {
   mDockPackageMetadata.reset(new PackageMetadataDock(mWorkspace));
   mDockDeviceMetadata.reset(new DeviceMetadataDock(mWorkspace));
   mDockComponentMetadata.reset(new ComponentMetadataDock(mWorkspace));
+  mDockComponentCategoryMetadata.reset(
+      new ComponentCategoryMetadataDock(mWorkspace));
 
   addDockWidget(Qt::RightDockWidgetArea, mDockSymbolMetadata.get(),
                 Qt::Vertical);
@@ -970,11 +973,14 @@ void LibraryEditor::createDocks() noexcept {
                 Qt::Vertical);
   addDockWidget(Qt::RightDockWidgetArea, mDockComponentMetadata.get(),
                 Qt::Vertical);
+  addDockWidget(Qt::RightDockWidgetArea, mDockComponentCategoryMetadata.get(),
+                Qt::Vertical);
 
   mDockSymbolMetadata->hide();
   mDockPackageMetadata->hide();
   mDockDeviceMetadata->hide();
   mDockComponentMetadata->hide();
+  mDockComponentCategoryMetadata->hide();
 }
 
 EditorWidgetBase::Context LibraryEditor::createContext(
@@ -1202,6 +1208,11 @@ std::shared_ptr<DeviceMetadataDock>
 std::shared_ptr<ComponentMetadataDock>
     LibraryEditor::getDockComponentMetadata() noexcept {
   return mDockComponentMetadata;
+}
+
+std::shared_ptr<ComponentCategoryMetadataDock>
+    LibraryEditor::getDockComponentCategoryMetadata() noexcept {
+  return mDockComponentCategoryMetadata;
 }
 
 /*******************************************************************************

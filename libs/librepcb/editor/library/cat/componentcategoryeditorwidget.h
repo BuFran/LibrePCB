@@ -68,6 +68,13 @@ public:
   // Getters
   QSet<Feature> getAvailableFeatures() const noexcept override;
 
+  // Setters
+  void connectEditor(UndoStackActionGroup& undoStackActionGroup,
+                     ExclusiveActionGroup& toolsActionGroup,
+                     QToolBar& commandToolBar,
+                     StatusBar& statusBar) noexcept override;
+  void disconnectEditor() noexcept override;
+
   // Operator Overloadings
   ComponentCategoryEditorWidget& operator=(
       const ComponentCategoryEditorWidget& rhs) = delete;
@@ -88,14 +95,10 @@ private:  // Methods
                                bool applyFix) override;
   void ruleCheckApproveRequested(std::shared_ptr<const RuleCheckMessage> msg,
                                  bool approve) noexcept override;
-  void btnChooseParentCategoryClicked() noexcept;
-  void btnResetParentCategoryClicked() noexcept;
-  void updateCategoryLabel() noexcept;
 
 private:  // Data
   QScopedPointer<Ui::ComponentCategoryEditorWidget> mUi;
-  std::unique_ptr<ComponentCategory> mCategory;
-  tl::optional<Uuid> mParentUuid;
+  std::shared_ptr<ComponentCategory> mCategory;
 };
 
 /*******************************************************************************
