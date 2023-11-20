@@ -36,6 +36,7 @@
 #include "../cmd/cmdfootprintedit.h"
 #include "../cmd/cmdfootprintpadedit.h"
 #include "../cmd/cmdpackageedit.h"
+#include "../librarylayersdock.h"
 #include "fsm/packageeditorfsm.h"
 #include "packagemetadatadock.h"
 #include "ui_packageeditorwidget.h"
@@ -47,6 +48,7 @@
 #include <librepcb/core/library/pkg/footprintpainter.h>
 #include <librepcb/core/library/pkg/package.h>
 #include <librepcb/core/library/pkg/packagecheckmessages.h>
+#include <librepcb/core/types/layer.h>
 #include <librepcb/core/types/pcbcolor.h>
 #include <librepcb/core/utils/clipperhelpers.h>
 #include <librepcb/core/workspace/workspace.h>
@@ -252,6 +254,9 @@ void PackageEditorWidget::connectEditor(
   undoStackStateModified();
   connect(dock.get(), &PackageMetadataDock::modified, this,
           &PackageEditorWidget::commitMetadata);
+
+  mContext.dockProvider.getDockLayers()->connectItem(
+      this, getLayerStackSetup());
 }
 
 void PackageEditorWidget::disconnectEditor() noexcept {
@@ -261,6 +266,8 @@ void PackageEditorWidget::disconnectEditor() noexcept {
   mStatusBar->setField(StatusBar::AbsolutePosition, false);
   disconnect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
              mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  mContext.dockProvider.getDockLayers()->disconnectItem();
 
   auto dock = mContext.dockProvider.getDockPackageMetadata();
   disconnect(dock.get(), &PackageMetadataDock::modified, this,
@@ -493,6 +500,67 @@ bool PackageEditorWidget::graphicsViewEventHandler(QEvent* event) noexcept {
       return false;
     }
   }
+}
+
+QList<std::shared_ptr<GraphicsLayer>> PackageEditorWidget::getAllLayers()
+    const noexcept {
+  auto result = mContext.layerProvider.getAllLayers();
+
+  static const QList<QString> packageLayers{
+      Theme::Color::sBoardFrames,
+      Theme::Color::sBoardOutlines,
+      Theme::Color::sBoardPlatedCutouts,
+      Theme::Color::sBoardHoles,
+      Theme::Color::sBoardVias,
+      Theme::Color::sBoardPads,
+      Theme::Color::sBoardZones,
+      Theme::Color::sBoardAirWires,
+      Theme::Color::sBoardMeasures,
+      Theme::Color::sBoardAlignment,
+      Theme::Color::sBoardDocumentation,
+      Theme::Color::sBoardComments,
+      Theme::Color::sBoardGuide,
+      Theme::Color::sBoardCopperTop,
+      Theme::Color::sBoardCopperBot,
+      Theme::Color::sBoardReferencesTop,
+      Theme::Color::sBoardReferencesBot,
+      Theme::Color::sBoardGrabAreasTop,
+      Theme::Color::sBoardGrabAreasBot,
+      Theme::Color::sBoardHiddenGrabAreasTop,
+      Theme::Color::sBoardHiddenGrabAreasBot,
+      Theme::Color::sBoardNamesTop,
+      Theme::Color::sBoardNamesBot,
+      Theme::Color::sBoardValuesTop,
+      Theme::Color::sBoardValuesBot,
+      Theme::Color::sBoardLegendTop,
+      Theme::Color::sBoardLegendBot,
+      Theme::Color::sBoardDocumentationTop,
+      Theme::Color::sBoardDocumentationBot,
+      Theme::Color::sBoardPackageOutlinesTop,
+      Theme::Color::sBoardPackageOutlinesBot,
+      Theme::Color::sBoardCourtyardTop,
+      Theme::Color::sBoardCourtyardBot,
+      Theme::Color::sBoardStopMaskTop,
+      Theme::Color::sBoardStopMaskBot,
+      Theme::Color::sBoardSolderPasteTop,
+      Theme::Color::sBoardSolderPasteBot,
+      Theme::Color::sBoardGlueTop,
+      Theme::Color::sBoardGlueBot,
+  };
+
+  QMutableListIterator<std::shared_ptr<GraphicsLayer>> i(result);
+  while (i.hasNext()) {
+    if (!packageLayers.contains(i.next()->getName())) {
+      i.remove();
+    }
+  }
+
+  return result;
+}
+
+std::shared_ptr<GraphicsLayer> PackageEditorWidget::getLayer(
+    const QString& name) const noexcept {
+  return mContext.layerProvider.getLayer(name);
 }
 
 bool PackageEditorWidget::toolChangeRequested(Tool newTool,
@@ -1025,6 +1093,89 @@ void PackageEditorWidget::toggle3DMode(bool enable) noexcept {
 
 bool PackageEditorWidget::is3DModeEnabled() const noexcept {
   return mUi->modelListEditorWidget->isVisible();
+}
+
+const QList<LayerStackSetup>& PackageEditorWidget::getLayerStackSetup() noexcept
+{
+  static const QList<LayerStackSetup> pkg{
+      {"TOP",
+       {
+           // start of common section
+           //  Theme::Color::sBoardBackground,
+           //  Theme::Color::sBoardErcAirWires,
+           Theme::Color::sBoardOutlines,
+           Theme::Color::sBoardHoles,
+           Theme::Color::sBoardVias,
+           Theme::Color::sBoardPads,
+           Theme::Color::sBoardZones,
+           Theme::Color::sBoardAirWires,
+           // start of top section
+           Theme::Color::sBoardLegendTop,
+           Theme::Color::sBoardReferencesTop,
+           Theme::Color::sBoardGrabAreasTop,
+           // Theme::Color::sBoardTestPointsTop,
+           Theme::Color::sBoardNamesTop,
+           Theme::Color::sBoardValuesTop,
+           // Theme::Color::sBoardCourtyardTop,
+           Theme::Color::sBoardDocumentationTop,
+           Theme::Color::sBoardCopperTop,
+       }},
+      {"BOT",
+       {
+           // start of common section
+           //  Theme::Color::sBoardBackground,
+           //  Theme::Color::sBoardErcAirWires,
+           Theme::Color::sBoardOutlines,
+           Theme::Color::sBoardHoles,
+           Theme::Color::sBoardVias,
+           Theme::Color::sBoardPads,
+           Theme::Color::sBoardZones,
+           Theme::Color::sBoardAirWires,
+           // start of bot section
+           Theme::Color::sBoardLegendBot,
+           Theme::Color::sBoardReferencesBot,
+           Theme::Color::sBoardGrabAreasBot,
+           // Theme::Color::sBoardTestPointsBot,
+           Theme::Color::sBoardNamesBot,
+           Theme::Color::sBoardValuesBot,
+           // Theme::Color::sBoardCourtyardBot,
+           Theme::Color::sBoardDocumentationBot,
+           Theme::Color::sBoardCopperBot,
+       }},
+      {"T+B",
+       {
+           // start of common section
+           //  Theme::Color::sBoardBackground,
+           //  Theme::Color::sBoardErcAirWires,
+           Theme::Color::sBoardOutlines,
+           Theme::Color::sBoardHoles,
+           Theme::Color::sBoardVias,
+           Theme::Color::sBoardPads,
+           Theme::Color::sBoardZones,
+           Theme::Color::sBoardAirWires,
+           // start of top section
+           Theme::Color::sBoardLegendTop,
+           Theme::Color::sBoardReferencesTop,
+           Theme::Color::sBoardGrabAreasTop,
+           // Theme::Color::sBoardTestPointsTop,
+           Theme::Color::sBoardNamesTop,
+           Theme::Color::sBoardValuesTop,
+           // Theme::Color::sBoardCourtyardTop,
+           Theme::Color::sBoardDocumentationTop,
+           Theme::Color::sBoardCopperTop,
+           // start of bot section
+           Theme::Color::sBoardLegendBot,
+           Theme::Color::sBoardReferencesBot,
+           Theme::Color::sBoardGrabAreasBot,
+           // Theme::Color::sBoardTestPointsBot,
+           Theme::Color::sBoardNamesBot,
+           Theme::Color::sBoardValuesBot,
+           // Theme::Color::sBoardCourtyardBot,
+           Theme::Color::sBoardDocumentationBot,
+           Theme::Color::sBoardCopperBot,
+       }},
+  };
+  return pkg;
 }
 
 /*******************************************************************************

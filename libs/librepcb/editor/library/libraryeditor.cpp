@@ -39,6 +39,7 @@
 #include "dev/devicemetadatadock.h"
 #include "eaglelibraryimportwizard/eaglelibraryimportwizard.h"
 #include "lib/libraryoverviewwidget.h"
+#include "librarylayersdock.h"
 #include "pkg/packageeditorwidget.h"
 #include "pkg/packagemetadatadock.h"
 #include "sym/symboleditorwidget.h"
@@ -967,6 +968,7 @@ void LibraryEditor::createDocks() noexcept {
       new ComponentCategoryMetadataDock(mWorkspace));
   mDockPackageCategoryMetadata.reset(
       new PackageCategoryMetadataDock(mWorkspace));
+  mDockPackageLayers.reset(new LibraryLayersDock());
 
   addDockWidget(Qt::RightDockWidgetArea, mDockSymbolMetadata.get(),
                 Qt::Vertical);
@@ -980,6 +982,8 @@ void LibraryEditor::createDocks() noexcept {
                 Qt::Vertical);
   addDockWidget(Qt::RightDockWidgetArea, mDockPackageCategoryMetadata.get(),
                 Qt::Vertical);
+  addDockWidget(Qt::RightDockWidgetArea, mDockPackageLayers.get(),
+                Qt::Vertical);
 
   mDockSymbolMetadata->hide();
   mDockPackageMetadata->hide();
@@ -987,6 +991,7 @@ void LibraryEditor::createDocks() noexcept {
   mDockComponentMetadata->hide();
   mDockComponentCategoryMetadata->hide();
   mDockPackageCategoryMetadata->hide();
+  mDockPackageLayers->hide();
 }
 
 EditorWidgetBase::Context LibraryEditor::createContext(
@@ -1224,6 +1229,10 @@ std::shared_ptr<ComponentCategoryMetadataDock>
 std::shared_ptr<PackageCategoryMetadataDock>
     LibraryEditor::getDockPackageCategoryMetadata() noexcept {
   return mDockPackageCategoryMetadata;
+}
+
+std::shared_ptr<LibraryLayersDock> LibraryEditor::getDockLayers() noexcept {
+  return mDockPackageLayers;
 }
 
 /*******************************************************************************

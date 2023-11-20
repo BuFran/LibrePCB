@@ -51,6 +51,7 @@ class DeviceMetadataDock;
 class ExclusiveActionGroup;
 class IF_DockProvider;
 class IF_GraphicsLayerProvider;
+class LibraryLayersDock;
 class PackageCategoryMetadataDock;
 class PackageMetadataDock;
 class StatusBar;
@@ -299,6 +300,7 @@ public:
       getDockComponentCategoryMetadata() noexcept = 0;
   virtual std::shared_ptr<PackageCategoryMetadataDock>
       getDockPackageCategoryMetadata() noexcept = 0;
+  virtual std::shared_ptr<LibraryLayersDock> getDockLayers() noexcept = 0;
 };
 
 /*******************************************************************************

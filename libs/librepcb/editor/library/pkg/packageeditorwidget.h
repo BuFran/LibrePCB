@@ -23,6 +23,7 @@
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
+#include "../../graphics/graphicslayer.h"
 #include "../../widgets/if_graphicsvieweventhandler.h"
 #include "../cat/categorylisteditorwidget.h"
 #include "../editorwidgetbase.h"
@@ -47,6 +48,7 @@ class PackageModel;
 namespace editor {
 
 class GraphicsScene;
+struct LayerStackSetup;
 class OpenGlSceneBuilder;
 class OpenGlView;
 class PackageEditorFsm;
@@ -63,7 +65,8 @@ class PackageEditorWidget;
  * @brief The PackageEditorWidget class
  */
 class PackageEditorWidget final : public EditorWidgetBase,
-                                  public IF_GraphicsViewEventHandler {
+                                  public IF_GraphicsViewEventHandler,
+                                  public IF_GraphicsLayerProvider {
   Q_OBJECT
 
 public:
@@ -117,6 +120,9 @@ private:  // Methods
   QString commitMetadata() noexcept;
   /// @see ::librepcb::editor::IF_GraphicsViewEventHandler
   bool graphicsViewEventHandler(QEvent* event) noexcept override;
+  QList<std::shared_ptr<GraphicsLayer>> getAllLayers() const noexcept override;
+  std::shared_ptr<GraphicsLayer> getLayer(
+      const QString& name) const noexcept override;
   bool toolChangeRequested(Tool newTool,
                            const QVariant& mode) noexcept override;
   void currentFootprintChanged(int index) noexcept;
@@ -142,6 +148,7 @@ private:  // Methods
                          Theme::GridStyle style) noexcept;
   void toggle3DMode(bool enable) noexcept;
   bool is3DModeEnabled() const noexcept;
+  static const QList<LayerStackSetup>& getLayerStackSetup() noexcept;
 
 private:  // Data
   QScopedPointer<Ui::PackageEditorWidget> mUi;

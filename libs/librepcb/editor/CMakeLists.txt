@@ -253,6 +253,9 @@ add_library(
   library/libraryeditor.ui
   library/libraryelementcache.cpp
   library/libraryelementcache.h
+  library/librarylayersdock.cpp
+  library/librarylayersdock.h
+  library/librarylayersdock.ui
   library/newelementwizard/newelementwizard.cpp
   library/newelementwizard/newelementwizard.h
   library/newelementwizard/newelementwizard.ui

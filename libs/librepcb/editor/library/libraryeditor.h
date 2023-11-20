@@ -104,6 +104,7 @@ public:
       getDockComponentCategoryMetadata() noexcept override;
   std::shared_ptr<PackageCategoryMetadataDock>
       getDockPackageCategoryMetadata() noexcept override;
+  std::shared_ptr<LibraryLayersDock> getDockLayers() noexcept override;
 
   /**
    * @brief Close the library editor (this will destroy this object!)
@@ -283,6 +284,7 @@ private:  // Data
   std::shared_ptr<ComponentMetadataDock> mDockComponentMetadata;
   std::shared_ptr<ComponentCategoryMetadataDock> mDockComponentCategoryMetadata;
   std::shared_ptr<PackageCategoryMetadataDock> mDockPackageCategoryMetadata;
+  std::shared_ptr<LibraryLayersDock> mDockPackageLayers;
 };
 
 /*******************************************************************************
