@@ -120,6 +120,9 @@ add_library(
   library/cat/packagecategoryeditorwidget.cpp
   library/cat/packagecategoryeditorwidget.h
   library/cat/packagecategoryeditorwidget.ui
+  library/cat/packagecategorymetadatadock.cpp
+  library/cat/packagecategorymetadatadock.h
+  library/cat/packagecategorymetadatadock.ui
   library/cmd/cmdcomponentedit.cpp
   library/cmd/cmdcomponentedit.h
   library/cmd/cmdcomponentpinsignalmapitemedit.cpp

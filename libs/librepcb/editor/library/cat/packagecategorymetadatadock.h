@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_EDITOR_PACKAGECATEGORYEDITORWIDGET_H
-#define LIBREPCB_EDITOR_PACKAGECATEGORYEDITORWIDGET_H
+#ifndef LIBREPCB_EDITOR_PACKAGECATEGORYMETADATADOCK_H
+#define LIBREPCB_EDITOR_PACKAGECATEGORYMETADATADOCK_H
 
 /*******************************************************************************
  *  Includes
@@ -30,7 +30,6 @@
 #include <QtCore>
 #include <QtWidgets>
 
-#include <memory>
 #include <optional.hpp>
 
 /*******************************************************************************
@@ -39,67 +38,62 @@
 namespace librepcb {
 
 class PackageCategory;
+class Workspace;
 
 namespace editor {
 
+class CategoryListEditorWidget;
+class IF_RuleCheckHandler;
+
 namespace Ui {
-class PackageCategoryEditorWidget;
+class PackageCategoryMetadataDock;
 }
 
 /*******************************************************************************
- *  Class PackageCategoryEditorWidget
+ *  Class PackageCategoryMetadataDock
  ******************************************************************************/
 
 /**
- * @brief The PackageCategoryEditorWidget class
+ * @brief The PackageCategoryMetadataDock class
  */
-class PackageCategoryEditorWidget final : public EditorWidgetBase {
+class PackageCategoryMetadataDock final : public QDockWidget {
   Q_OBJECT
+  Q_DISABLE_COPY(PackageCategoryMetadataDock)
+
+signals:
+  void modified();
 
 public:
   // Constructors / Destructor
-  PackageCategoryEditorWidget() = delete;
-  PackageCategoryEditorWidget(const PackageCategoryEditorWidget& other) =
-      delete;
-  PackageCategoryEditorWidget(const Context& context, const FilePath& fp,
-                              QWidget* parent = nullptr);
-  ~PackageCategoryEditorWidget() noexcept;
-
-  // Getters
-  QSet<Feature> getAvailableFeatures() const noexcept override;
+  explicit PackageCategoryMetadataDock(Workspace& workspace) noexcept;
+  ~PackageCategoryMetadataDock() noexcept override;
 
   // Setters
-  void connectEditor(UndoStackActionGroup& undoStackActionGroup,
-                     ExclusiveActionGroup& toolsActionGroup,
-                     QToolBar& commandToolBar,
-                     StatusBar& statusBar) noexcept override;
-  void disconnectEditor() noexcept override;
+  void setName(QString name) noexcept;
+  void setAuthor(QString author) noexcept;
+  void setMessages(const RuleCheckMessageList& messages) noexcept;
 
-  // Operator Overloadings
-  PackageCategoryEditorWidget& operator=(
-      const PackageCategoryEditorWidget& rhs) = delete;
+  void updateDisplay() noexcept;
+  UndoCommand* commitChanges();
 
-public slots:
-  bool save() noexcept override;
+  void connectItem(const std::shared_ptr<PackageCategory>& category,
+                   EditorWidgetBase::Context* context,
+                   IF_RuleCheckHandler* handler) noexcept;
 
-private:  // Methods
-  void updateMetadata() noexcept;
-  QString commitMetadata() noexcept;
-  bool isInterfaceBroken() const noexcept override { return false; }
-  bool runChecks(RuleCheckMessageList& msgs) const override;
-  template <typename MessageType>
-  void fixMsg(const MessageType& msg);
-  template <typename MessageType>
-  bool fixMsgHelper(std::shared_ptr<const RuleCheckMessage> msg, bool applyFix);
-  bool processRuleCheckMessage(std::shared_ptr<const RuleCheckMessage> msg,
-                               bool applyFix) override;
-  void ruleCheckApproveRequested(std::shared_ptr<const RuleCheckMessage> msg,
-                                 bool approve) noexcept override;
+  void disconnectItem() noexcept;
 
-private:  // Data
-  QScopedPointer<Ui::PackageCategoryEditorWidget> mUi;
+private:
+  // Private methods
+  void btnChooseParentCategoryClicked() noexcept;
+  void btnResetParentCategoryClicked() noexcept;
+  void updateCategoryLabel() noexcept;
+
+private:
+  // General
+  QScopedPointer<Ui::PackageCategoryMetadataDock> mUi;
   std::shared_ptr<PackageCategory> mCategory;
   tl::optional<Uuid> mParentUuid;
+  Workspace& mWorkspace;
 };
 
 /*******************************************************************************

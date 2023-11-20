@@ -94,7 +94,6 @@ void ComponentCategoryEditorWidget::connectEditor(
 }
 
 void ComponentCategoryEditorWidget::disconnectEditor() noexcept {
-
   auto dock = mContext.dockProvider.getDockComponentCategoryMetadata();
   disconnect(dock.get(), &ComponentCategoryMetadataDock::modified, this,
              &ComponentCategoryEditorWidget::commitMetadata);
