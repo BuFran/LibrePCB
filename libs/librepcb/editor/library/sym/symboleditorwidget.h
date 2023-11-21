@@ -23,6 +23,7 @@
 /*******************************************************************************
  *  Includes
  ******************************************************************************/
+#include "../../graphics/graphicslayer.h"
 #include "../../widgets/if_graphicsvieweventhandler.h"
 #include "../editorwidgetbase.h"
 
@@ -47,6 +48,7 @@ class GraphicsScene;
 class SymbolEditorFsm;
 class SymbolGraphicsItem;
 class SymbolMetadataDock;
+struct LayerStackSetup;
 
 namespace Ui {
 class SymbolEditorWidget;
@@ -60,7 +62,8 @@ class SymbolEditorWidget;
  * @brief The SymbolEditorWidget class
  */
 class SymbolEditorWidget final : public EditorWidgetBase,
-                                 public IF_GraphicsViewEventHandler {
+                                 public IF_GraphicsViewEventHandler,
+                                 public IF_GraphicsLayerProvider {
   Q_OBJECT
 
 public:
@@ -110,6 +113,9 @@ private:  // Methods
   QString commitMetadata() noexcept;
   /// @see ::librepcb::editor::IF_GraphicsViewEventHandler
   bool graphicsViewEventHandler(QEvent* event) noexcept override;
+  QList<std::shared_ptr<GraphicsLayer>> getAllLayers() const noexcept override;
+  std::shared_ptr<GraphicsLayer> getLayer(
+      const QString& name) const noexcept override;
   bool toolChangeRequested(Tool newTool,
                            const QVariant& mode) noexcept override;
   bool isInterfaceBroken() const noexcept override;
@@ -126,6 +132,8 @@ private:  // Methods
                                 const QString& settingsKey) noexcept override;
   void setGridProperties(const PositiveLength& interval, const LengthUnit& unit,
                          Theme::GridStyle style) noexcept;
+
+  static const QList<LayerStackSetup>& getLayerStackSetup() noexcept;
 
 private:  // Data
   QScopedPointer<Ui::SymbolEditorWidget> mUi;

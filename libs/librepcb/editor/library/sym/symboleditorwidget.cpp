@@ -33,6 +33,7 @@
 #include "../../widgets/statusbar.h"
 #include "../../workspace/desktopservices.h"
 #include "../cmd/cmdsymbolpinedit.h"
+#include "../librarylayersdock.h"
 #include "fsm/symboleditorfsm.h"
 #include "symbolgraphicsitem.h"
 #include "symbolmetadatadock.h"
@@ -202,6 +203,9 @@ void SymbolEditorWidget::connectEditor(
   undoStackStateModified();
   connect(dock.get(), &SymbolMetadataDock::modified, this,
           &SymbolEditorWidget::commitMetadata);
+
+  mContext.dockProvider.getDockLayers()->connectItem(this,
+                                                     getLayerStackSetup());
 }
 
 void SymbolEditorWidget::disconnectEditor() noexcept {
@@ -211,6 +215,8 @@ void SymbolEditorWidget::disconnectEditor() noexcept {
   mStatusBar->setField(StatusBar::AbsolutePosition, false);
   disconnect(mUi->graphicsView, &GraphicsView::cursorScenePositionChanged,
              mStatusBar, &StatusBar::setAbsoluteCursorPosition);
+
+  mContext.dockProvider.getDockLayers()->disconnectItem();
 
   auto dock = mContext.dockProvider.getDockSymbolMetadata();
   disconnect(dock.get(), &SymbolMetadataDock::modified, this,
@@ -416,6 +422,46 @@ bool SymbolEditorWidget::graphicsViewEventHandler(QEvent* event) noexcept {
   }
 }
 
+QList<std::shared_ptr<GraphicsLayer>> SymbolEditorWidget::getAllLayers()
+    const noexcept {
+  auto result = mContext.layerProvider.getAllLayers();
+
+  static const QList<QString> packageLayers{
+      Theme::Color::sSchematicReferences,
+      Theme::Color::sSchematicFrames,
+      Theme::Color::sSchematicOutlines,
+      Theme::Color::sSchematicGrabAreas,
+      Theme::Color::sSchematicHiddenGrabAreas,
+      Theme::Color::sSchematicOptionalPins,
+      Theme::Color::sSchematicRequiredPins,
+      Theme::Color::sSchematicPinLines,
+      Theme::Color::sSchematicPinNames,
+      Theme::Color::sSchematicPinNumbers,
+      Theme::Color::sSchematicNames,
+      Theme::Color::sSchematicValues,
+      Theme::Color::sSchematicWires,
+      Theme::Color::sSchematicNetLabels,
+      Theme::Color::sSchematicNetLabelAnchors,
+      Theme::Color::sSchematicDocumentation,
+      Theme::Color::sSchematicComments,
+      Theme::Color::sSchematicGuide,
+  };
+
+  QMutableListIterator<std::shared_ptr<GraphicsLayer>> i(result);
+  while (i.hasNext()) {
+    if (!packageLayers.contains(i.next()->getName())) {
+      i.remove();
+    }
+  }
+
+  return result;
+}
+
+std::shared_ptr<GraphicsLayer> SymbolEditorWidget::getLayer(
+    const QString& name) const noexcept {
+  return mContext.layerProvider.getLayer(name);
+}
+
 bool SymbolEditorWidget::toolChangeRequested(Tool newTool,
                                              const QVariant& mode) noexcept {
   Q_UNUSED(mode);
@@ -597,6 +643,12 @@ void SymbolEditorWidget::setGridProperties(const PositiveLength& interval,
   if (mFsm) {
     mFsm->updateAvailableFeatures();  // Re-calculate "snap to grid" feature!
   }
+}
+
+const QList<LayerStackSetup>&
+    SymbolEditorWidget::getLayerStackSetup() noexcept {
+  static const QList<LayerStackSetup> sym{};
+  return sym;
 }
 
 /*******************************************************************************
