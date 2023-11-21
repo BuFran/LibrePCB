@@ -255,8 +255,8 @@ void PackageEditorWidget::connectEditor(
   connect(dock.get(), &PackageMetadataDock::modified, this,
           &PackageEditorWidget::commitMetadata);
 
-  mContext.dockProvider.getDockLayers()->connectItem(
-      this, getLayerStackSetup());
+  mContext.dockProvider.getDockLayers()->connectItem(this,
+                                                     getLayerStackSetup());
 }
 
 void PackageEditorWidget::disconnectEditor() noexcept {
@@ -1095,8 +1095,8 @@ bool PackageEditorWidget::is3DModeEnabled() const noexcept {
   return mUi->modelListEditorWidget->isVisible();
 }
 
-const QList<LayerStackSetup>& PackageEditorWidget::getLayerStackSetup() noexcept
-{
+const QList<LayerStackSetup>&
+    PackageEditorWidget::getLayerStackSetup() noexcept {
   static const QList<LayerStackSetup> pkg{
       {"TOP",
        {

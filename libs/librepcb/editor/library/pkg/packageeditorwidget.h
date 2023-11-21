@@ -48,10 +48,10 @@ class PackageModel;
 namespace editor {
 
 class GraphicsScene;
-struct LayerStackSetup;
 class OpenGlSceneBuilder;
 class OpenGlView;
 class PackageEditorFsm;
+struct LayerStackSetup;
 
 namespace Ui {
 class PackageEditorWidget;
