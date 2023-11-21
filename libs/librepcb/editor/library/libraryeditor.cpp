@@ -974,16 +974,25 @@ void LibraryEditor::createDocks() noexcept {
                 Qt::Vertical);
   addDockWidget(Qt::RightDockWidgetArea, mDockPackageMetadata.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockSymbolMetadata.get(), mDockPackageMetadata.get());
   addDockWidget(Qt::RightDockWidgetArea, mDockDeviceMetadata.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockPackageMetadata.get(), mDockDeviceMetadata.get());
   addDockWidget(Qt::RightDockWidgetArea, mDockComponentMetadata.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockDeviceMetadata.get(), mDockComponentMetadata.get());
   addDockWidget(Qt::RightDockWidgetArea, mDockComponentCategoryMetadata.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockComponentMetadata.get(),
+                   mDockComponentCategoryMetadata.get());
   addDockWidget(Qt::RightDockWidgetArea, mDockPackageCategoryMetadata.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockComponentCategoryMetadata.get(),
+                   mDockPackageCategoryMetadata.get());
   addDockWidget(Qt::RightDockWidgetArea, mDockPackageLayers.get(),
                 Qt::Vertical);
+  tabifyDockWidget(mDockPackageCategoryMetadata.get(),
+                   mDockPackageLayers.get());
 
   mDockSymbolMetadata->hide();
   mDockPackageMetadata->hide();
