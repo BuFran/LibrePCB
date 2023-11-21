@@ -53,6 +53,7 @@ LibraryLayersDock::~LibraryLayersDock() noexcept {
 void LibraryLayersDock::connectItem(const IF_GraphicsLayerProvider* lp,
                                     const QList<LayerStackSetup>& lc) noexcept {
   mLayerProvider = lp;
+  mUpdateScheduled = true;
 
   foreach (auto& layer, mLayerProvider->getAllLayers()) {
     layer->onEdited.attach(mOnLayerEditedSlot);
@@ -73,6 +74,8 @@ void LibraryLayersDock::disconnectItem() noexcept {
   while ((item = mUi->horizontalLayout->takeAt(0))) {
     delete item;
   }
+
+  mUi->listWidget->clear();
   mLayerProvider = nullptr;
   hide();
 }
