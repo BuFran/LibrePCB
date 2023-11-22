@@ -23,6 +23,7 @@ DOCKER=""
 DOCKER_CMD="docker"
 CLANGFORMAT=${CLANGFORMAT:-clang-format}
 ALL=""
+COMPARE_AGAINST="master"
 for i in "$@"
 do
 case $i in
@@ -36,6 +37,11 @@ case $i in
   ;;
   --all)
   ALL="--all"
+  shift
+  ;;
+  --compare-against)
+  shift
+  COMPARE_AGAINST=$1
   shift
   ;;
 esac
@@ -82,7 +88,7 @@ search_files() {
     TRACKED=$(git ls-files -- $MASKS)
   else
     # Only files which differ from the master branch
-    TRACKED=$(git diff --name-only master -- $MASKS)
+    TRACKED=$(git diff --name-only ${COMPARE_AGAINST} -- $MASKS)
   fi
   UNTRACKED=$(git ls-files --others --exclude-standard -- $MASKS)
 
