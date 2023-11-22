@@ -22,6 +22,7 @@ set -euo pipefail
 DOCKER=""
 DOCKER_CMD="docker"
 CLANGFORMAT=${CLANGFORMAT:-clang-format}
+QMLFORMAT="/usr/lib/qt5/bin/qmlformat"
 ALL=""
 COMPARE_AGAINST="master"
 for i in "$@"
@@ -209,8 +210,8 @@ for dir in share/
 do
   for file in $(search_files "${dir}" .qml)
   do
-    if [ -x /usr/lib/qt5/bin/qmlformat ]; then
-      NEW_CONTENT=$(/usr/lib/qt5/bin/qmlformat "$file" || qml_format_failed)
+    if [ -x "${QMLFORMAT}" ]; then
+      NEW_CONTENT=$(${QMLFORMAT} "$file" || qml_format_failed)
       update_file "$file"
     fi
   done
