@@ -206,4 +206,43 @@ do
   fi
 done
 
+# Format qml source files with qmlformat
+qml_format_failed() {
+  echo "" >&2
+  echo "ERROR: qmlformat failed!" >&2
+  echo "  Make sure that qmlformat (qtdeclarative5-dev-tools) are installed." >&2
+  echo "  On Linux, you can also run this script in a docker" >&2
+  echo "  container by using the '--docker' argument." >&2
+  exit 7
+}
+echo "Formatting QML sources with qmlformat..."
+for dir in share/
+do
+  if [ "$ALL" == "--all" ]; then
+    TRACKED=$(git ls-files -- "${dir}**.qml")
+  else
+    # Only files which differ from the master branch
+    TRACKED=$(git diff --name-only master -- "${dir}**.qml")
+  fi
+  UNTRACKED=$(git ls-files --others --exclude-standard -- "${dir}**.qml")
+  for file in $TRACKED $UNTRACKED
+  do
+    if [ -f "$file" ]; then
+      # Note: Do NOT use in-place edition of clang-format because this causes
+      # "make" to detect the files as changed every time, even if the content was
+      # not modified! So we only overwrite the files if their content has changed.
+      OLD_CONTENT=$(cat "$file")
+      NEW_CONTENT=$(/usr/lib/qt5/bin/qmlformat "$file" || qml_format_failed)
+      if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
+      then
+        printf "%s\n" "$NEW_CONTENT" > "$file"
+        echo "[M] $file"
+        COUNTER=$((COUNTER+1))
+      else
+        echo "[ ] $file"
+      fi
+    fi
+  done
+done
+
 echo "Finished: $COUNTER files modified."
