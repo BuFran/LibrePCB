@@ -8,8 +8,10 @@ Item {
 
     default property alias contents: placeholder.data
     property alias title: window.title
+    property bool docked: true
 
     implicitHeight: 190
+    height: docked ? implicitHeight : 0
 
     anchors {
         left: parent.left
@@ -27,11 +29,7 @@ Item {
         states: [
             State {
                 name: "undocked"
-
-                PropertyChanges {
-                    target: root
-                    height: 0
-                }
+                when: !docked
 
                 ParentChange {
                     target: content
@@ -41,11 +39,7 @@ Item {
             },
             State {
                 name: "docked"
-
-                PropertyChanges {
-                    target: root
-                    height: implicitHeight
-                }
+                when: docked
 
                 ParentChange {
                     target: content
@@ -82,7 +76,7 @@ Item {
             Button {
                 flat: true
                 icon.source: "qrc:///img/actions/checks.png"
-                onClicked: JS.setDocked(!JS.isDocked())
+                onClicked: docked = !docked
 
                 anchors {
                     right: parent.right
@@ -98,7 +92,7 @@ Item {
             id: placeholder
 
             anchors {
-                top: titleBar.visible ? titleBar.bottom : parent.top
+                top: !docked ? titleBar.bottom : parent.top
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
@@ -115,8 +109,8 @@ Item {
         height: 440
         flags: Qt.WindowTitleHint
         title: titleLabel.text
-        visible: !JS.isDocked()
-        onClosing: JS.setDocked(true)
+        visible: !docked
+        onClosing: docked = true
 
         Item {
             id: undockedContainer
