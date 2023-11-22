@@ -209,7 +209,7 @@ for dir in share/
 do
   for file in $(search_files "${dir}" .qml)
   do
-    if [ -f "$file" ]; then
+    if [ -x /usr/lib/qt5/bin/qmlformat ]; then
       NEW_CONTENT=$(/usr/lib/qt5/bin/qmlformat "$file" || qml_format_failed)
       update_file "$file"
     fi
