@@ -80,7 +80,7 @@ search_files() {
 
   MASKS=""
   while (($#)); do
-  	MASKS+=" ${DIRECTORY}**$1"
+    MASKS+=" ${DIRECTORY}**$1"
     shift
   done
 
