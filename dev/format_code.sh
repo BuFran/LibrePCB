@@ -63,6 +63,57 @@ fi
 
 COUNTER=0
 
+# this function searches for all files that are processable in directory $1 with
+# extensions with mask that follows. It searchs sorted for tracked files first,
+# then following untracked files
+#
+# All found files are put on stdout so it is parsable by foreach loop
+search_files() {
+  DIRECTORY=$1
+  shift
+
+  MASKS=""
+  while (($#)); do
+  	MASKS+=" ${DIRECTORY}**$1"
+    shift
+  done
+
+  if [ "$ALL" == "--all" ]; then
+    TRACKED=$(git ls-files -- $MASKS)
+  else
+    # Only files which differ from the master branch
+    TRACKED=$(git diff --name-only master -- $MASKS)
+  fi
+  UNTRACKED=$(git ls-files --others --exclude-standard -- $MASKS)
+
+  for file in $TRACKED $UNTRACKED
+  do
+    if [ -f "$file" ]; then
+      echo "$file"
+    fi
+  done
+}
+
+# this function tracks modifications of file and prints out information that file
+# has been processed by the script. It increment processed file counter.
+# The processed file contents is in the GLOBAL variable NEW_CONTENT
+update_file() {
+# Note: Do NOT use in-place edition of the tools because these causes
+# "make" to detect the files as changed every time, even if the content was
+# not modified! So we only overwrite the files here if their content has changed.
+
+  OLD_CONTENT=$(cat "$1")
+
+  if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
+  then
+    printf "%s\n" "$NEW_CONTENT" > "$1"
+    echo "[M] $1"
+    COUNTER=$((COUNTER+1))
+  else
+    echo "[ ] $1"
+  fi
+}
+
 # Format source files with clang-format and Python 3.
 clang_format_failed() {
   echo "" >&2
@@ -75,31 +126,11 @@ clang_format_failed() {
 echo "Formatting sources with $CLANGFORMAT and Python..."
 for dir in apps/ libs/librepcb/ tests/unittests/
 do
-  if [ "$ALL" == "--all" ]; then
-    TRACKED=$(git ls-files -- "${dir}**.cpp" "${dir}**.hpp" "${dir}**.h")
-  else
-    # Only files which differ from the master branch
-    TRACKED=$(git diff --name-only master -- "${dir}**.cpp" "${dir}**.hpp" "${dir}**.h")
-  fi
-  UNTRACKED=$(git ls-files --others --exclude-standard -- "${dir}**.cpp" "${dir}**.hpp" "${dir}**.h")
-  for file in $TRACKED $UNTRACKED
+  for file in $(search_files "${dir}" .cpp .hpp .h)
   do
-    if [ -f "$file" ]; then
-      # Note: Do NOT use in-place edition of clang-format because this causes
-      # "make" to detect the files as changed every time, even if the content was
-      # not modified! So we only overwrite the files if their content has changed.
-      OLD_CONTENT=$(cat "$file")
-      NEW_CONTENT=$($CLANGFORMAT -style=file "$file" || clang_format_failed)
-      NEW_CONTENT=$(echo "$NEW_CONTENT" | "$REPO_ROOT/dev/format_code_helper.py" "$file" || clang_format_failed)
-      if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
-      then
-        printf "%s\n" "$NEW_CONTENT" > "$file"
-        echo "[M] $file"
-        COUNTER=$((COUNTER+1))
-      else
-        echo "[ ] $file"
-      fi
-    fi
+    NEW_CONTENT=$($CLANGFORMAT -style=file "$file" || clang_format_failed)
+    NEW_CONTENT=$(echo "$NEW_CONTENT" | "$REPO_ROOT/dev/format_code_helper.py" "$file" || clang_format_failed)
+    update_file "$file"
   done
 done
 
@@ -115,27 +146,10 @@ ui_format_failed() {
 echo "Formatting UI files with Python..."
 for dir in apps/ libs/librepcb/ tests/unittests/
 do
-  if [ "$ALL" == "--all" ]; then
-    TRACKED=$(git ls-files -- "${dir}**.ui")
-  else
-    # Only files which differ from the master branch
-    TRACKED=$(git diff --name-only master -- "${dir}**.ui")
-  fi
-  UNTRACKED=$(git ls-files --others --exclude-standard -- "${dir}**.ui")
-  for file in $TRACKED $UNTRACKED
+  for file in $(search_files "${dir}" .ui)
   do
-    if [ -f "$file" ]; then
-      OLD_CONTENT=$(cat "$file")
-      NEW_CONTENT=$(echo "$OLD_CONTENT" | "$REPO_ROOT/dev/format_code_helper.py" "$file" || ui_format_failed)
-      if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
-      then
-        printf "%s\n" "$NEW_CONTENT" > "$file"
-        echo "[M] $file"
-        COUNTER=$((COUNTER+1))
-      else
-        echo "[ ] $file"
-      fi
-    fi
+    NEW_CONTENT=$(cat "$file" | "$REPO_ROOT/dev/format_code_helper.py" "$file" || ui_format_failed)
+    update_file "$file"
   done
 done
 
@@ -149,27 +163,10 @@ cmake_format_failed() {
   exit 7
 }
 echo "Formatting CMake files with cmake-format..."
-if [ "$ALL" == "--all" ]; then
-  TRACKED=$(git ls-files -- "**CMakeLists.txt" "*.cmake")
-else
-  # Only files which differ from the master branch
-  TRACKED=$(git diff --name-only master -- "**CMakeLists.txt" "*.cmake")
-fi
-UNTRACKED=$(git ls-files --others --exclude-standard -- "**CMakeLists.txt" "*.cmake")
-for file in $TRACKED $UNTRACKED
+for file in $(search_files "" CMakeLists.txt .cmake)
 do
-  if [ -f "$file" ]; then
-    OLD_CONTENT=$(cat "$file")
-    NEW_CONTENT=$(cmake-format "$file" || cmake_format_failed)
-    if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
-    then
-      printf "%s\n" "$NEW_CONTENT" > "$file"
-      echo "[M] $file"
-      COUNTER=$((COUNTER+1))
-    else
-      echo "[ ] $file"
-    fi
-  fi
+  NEW_CONTENT=$(cmake-format "$file" || cmake_format_failed)
+  update_file "$file"
 done
 
 # Format *.qrc files with xmlsort.
@@ -182,28 +179,14 @@ xmlsort_failed() {
   exit 7
 }
 echo "Formatting resource files with xmlsort..."
-if [ "$ALL" == "--all" ]; then
-  TRACKED=$(git ls-files -- "**.qrc")
-else
-  # Only files which differ from the master branch
-  TRACKED=$(git diff --name-only master -- "**.qrc")
-fi
-UNTRACKED=$(git ls-files --others --exclude-standard -- "**.qrc")
-for file in $TRACKED $UNTRACKED
+for dir in img/ libs/
 do
-  if [ -f "$file" ]; then
-    OLD_CONTENT=$(cat "$file")
+  for file in $(search_files "${dir}" .qrc)
+  do
     NEW_CONTENT=$(xmlsort -r "RCC/qresource/file" -i -s "$file" || xmlsort_failed)
     NEW_CONTENT="${NEW_CONTENT//\'/\"}"
-    if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
-    then
-      printf "%s\n" "$NEW_CONTENT" > "$file"
-      echo "[M] $file"
-      COUNTER=$((COUNTER+1))
-    else
-      echo "[ ] $file"
-    fi
-  fi
+    update_file "$file"
+  done
 done
 
 # Format qml source files with qmlformat
@@ -218,29 +201,11 @@ qml_format_failed() {
 echo "Formatting QML sources with qmlformat..."
 for dir in share/
 do
-  if [ "$ALL" == "--all" ]; then
-    TRACKED=$(git ls-files -- "${dir}**.qml")
-  else
-    # Only files which differ from the master branch
-    TRACKED=$(git diff --name-only master -- "${dir}**.qml")
-  fi
-  UNTRACKED=$(git ls-files --others --exclude-standard -- "${dir}**.qml")
-  for file in $TRACKED $UNTRACKED
+  for file in $(search_files "${dir}" .qml)
   do
     if [ -f "$file" ]; then
-      # Note: Do NOT use in-place edition of clang-format because this causes
-      # "make" to detect the files as changed every time, even if the content was
-      # not modified! So we only overwrite the files if their content has changed.
-      OLD_CONTENT=$(cat "$file")
       NEW_CONTENT=$(/usr/lib/qt5/bin/qmlformat "$file" || qml_format_failed)
-      if [ "$NEW_CONTENT" != "$OLD_CONTENT" ]
-      then
-        printf "%s\n" "$NEW_CONTENT" > "$file"
-        echo "[M] $file"
-        COUNTER=$((COUNTER+1))
-      else
-        echo "[ ] $file"
-      fi
+      update_file "$file"
     fi
   done
 done
