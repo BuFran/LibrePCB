@@ -12,6 +12,12 @@ add_library(
   editorapplication.h
   editorwindow.cpp
   editorwindow.h
+  editors/boardinterface.cpp
+  editors/boardinterface.h
+  editors/libraryinterface.cpp
+  editors/libraryinterface.h
+  editors/schematicinterface.cpp
+  editors/schematicinterface.h
   librarygui.cpp
   librarygui.h
   objectlistmodel.cpp

@@ -3,5 +3,5 @@ function createDock(name, text) {
     var sprite = component.createObject(dock);
 
     sprite.title = qsTr("UAHAHA");
-    sprite.contents = Qt.createQmlObject('import QtQuick.Controls 2.0; Label {anchors.centerIn: parent; text: "XXX"; font.pointSize: 48}', sprite);
+    sprite.contents = Qt.createQmlObject('import "editors"; BoardView {anchors.centerIn: parent}', sprite);
 }

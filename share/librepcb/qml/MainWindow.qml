@@ -4,7 +4,9 @@ import QtQuick.Controls 2.0 as Controls2
 import QtQuick.Layouts 1.2
 import QtQuick.Window 2.0
 import "utils"
+import "editors" as Editors;
 import "MainWindow.js" as JS
+import LibrePCB.Editors 1.0
 
 ApplicationWindow {
     id: window

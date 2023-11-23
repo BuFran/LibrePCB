@@ -26,6 +26,9 @@
 #include "librarygui.h"
 #include "objectlistmodel.h"
 #include "openedproject.h"
+#include "editors/boardinterface.h"
+#include "editors/schematicinterface.h"
+#include "editors/libraryinterface.h"
 
 #include <librepcb/core/fileio/filepath.h>
 #include <librepcb/core/fileio/transactionalfilesystem.h>
@@ -50,6 +53,13 @@
 namespace librepcb {
 namespace gui {
 
+// for now, always register them in namespace editors, with version 1.0
+// usage will be "import LibrePCB.Editors 1.0" in every qml file
+template<class T>
+static inline void registerQmlType(){
+  qmlRegisterType<T>("LibrePCB.Editors", 1, 0, T::QmlName);
+}
+
 /*******************************************************************************
  *  Constructors / Destructor
  ******************************************************************************/
@@ -62,6 +72,10 @@ EditorApplication::EditorApplication(Workspace& ws, QObject* parent)
     mWorkspaceLibraries(new ObjectListModel(this)),
     mOpenedProjects(new ObjectListModel(this)) {
   qmlRegisterType<OpenGlView>("org.librepcb.qmlcomponents", 1, 0, "OpenGlView");
+
+  registerQmlType<BoardInterface>();
+  registerQmlType<SchematicInterface>();
+  registerQmlType<LibraryInterface>();
 
   mWindows.append(std::make_shared<EditorWindow>(*this));
 
