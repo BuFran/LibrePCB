@@ -29,6 +29,7 @@
 #include "editors/boardinterface.h"
 #include "editors/schematicinterface.h"
 #include "editors/libraryinterface.h"
+#include "editors/boardview.h"
 
 #include <librepcb/core/fileio/filepath.h>
 #include <librepcb/core/fileio/transactionalfilesystem.h>
@@ -76,6 +77,7 @@ EditorApplication::EditorApplication(Workspace& ws, QObject* parent)
   registerQmlType<BoardInterface>();
   registerQmlType<SchematicInterface>();
   registerQmlType<LibraryInterface>();
+  registerQmlType<BoardView>();
 
   mWindows.append(std::make_shared<EditorWindow>(*this));
 

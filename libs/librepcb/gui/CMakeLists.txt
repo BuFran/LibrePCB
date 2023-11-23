@@ -14,6 +14,8 @@ add_library(
   editorwindow.h
   editors/boardinterface.cpp
   editors/boardinterface.h
+  editors/boardview.cpp
+  editors/boardview.h
   editors/libraryinterface.cpp
   editors/libraryinterface.h
   editors/schematicinterface.cpp

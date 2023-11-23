@@ -17,40 +17,34 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_GUI_BOARDINTERFACE_H
-#define LIBREPCB_GUI_BOARDINTERFACE_H
-
 /*******************************************************************************
 *  Includes
 ******************************************************************************/
-#include <QtCore>
-#include <QtQuick>
+#include "boardview.h"
+
+#include <QQmlApplicationEngine>
+#include <QQuickView>
 
 /*******************************************************************************
-*  Namespace / Forward Declarations
-******************************************************************************/
+ *  Namespace
+ ******************************************************************************/
 namespace librepcb {
 namespace gui {
 
 /*******************************************************************************
-*  Class SchematicInterface
+*  Constructors / Destructor
 ******************************************************************************/
 
-class BoardInterface : public QObject {
-  Q_OBJECT
-  QML_ELEMENT
+BoardView::BoardView() noexcept
+  : QQuickItem() {
 
-public:
-  // Constructors / Destructor
-  BoardInterface() noexcept;
-  BoardInterface(const BoardInterface& other) noexcept = delete;
-  ~BoardInterface() noexcept override;
+  auto engine = new QQmlApplicationEngine(this);
 
-  // Operator Overloadings
-  BoardInterface& operator=(const BoardInterface& rhs) = delete;
+  engine->
+}
 
-  static constexpr const char * const QmlName = "BoardInterface";
-};
+BoardView::~BoardView() noexcept {
+}
 
 /*******************************************************************************
 *  End of File
@@ -58,5 +52,3 @@ public:
 
 }  // namespace gui
 }  // namespace librepcb
-
-#endif

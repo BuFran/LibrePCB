@@ -17,18 +17,20 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBREPCB_GUI_BOARDINTERFACE_H
-#define LIBREPCB_GUI_BOARDINTERFACE_H
+#ifndef LIBREPCB_GUI_BOARDVIEW_H
+#define LIBREPCB_GUI_BOARDVIEW_H
 
 /*******************************************************************************
 *  Includes
 ******************************************************************************/
+#include <QQmlEngine>
+#include <QQuickItem>
 #include <QtCore>
 #include <QtQuick>
 
 /*******************************************************************************
-*  Namespace / Forward Declarations
-******************************************************************************/
+ *  Namespace / Forward Declarations
+ ******************************************************************************/
 namespace librepcb {
 namespace gui {
 
@@ -36,20 +38,20 @@ namespace gui {
 *  Class SchematicInterface
 ******************************************************************************/
 
-class BoardInterface : public QObject {
+class BoardView : public QQuickItem {
   Q_OBJECT
   QML_ELEMENT
 
 public:
   // Constructors / Destructor
-  BoardInterface() noexcept;
-  BoardInterface(const BoardInterface& other) noexcept = delete;
-  ~BoardInterface() noexcept override;
+  BoardView() noexcept;
+  BoardView(const BoardView& other) noexcept = delete;
+  ~BoardView() noexcept override;
 
   // Operator Overloadings
-  BoardInterface& operator=(const BoardInterface& rhs) = delete;
+  BoardView& operator=(const BoardView& rhs) = delete;
 
-  static constexpr const char * const QmlName = "BoardInterface";
+  static constexpr const char * const QmlName = "BoardView";
 };
 
 /*******************************************************************************
